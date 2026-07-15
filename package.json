@@ -30,6 +30,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke:quick-pet": "cross-env ELECTRON_RUN_AS_NODE= electron scripts/smoke-quick-pet.cjs",
+    "smoke:quick-pet:ci": "cross-env ELECTRON_RUN_AS_NODE= electron --no-sandbox scripts/smoke-quick-pet.cjs",
     "samples:build": "npm run build && cross-env ELECTRON_RUN_AS_NODE= electron scripts/build-beginner-pets.cjs",
     "build": "npm run prepare:assets && npm run typecheck && vite build && tsc -p tsconfig.electron.json",
     "dist": "npm run build && electron-builder --publish never",
