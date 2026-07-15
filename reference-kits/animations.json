@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "1.0.0",
+  "coordinateSystem": {
+    "units": "normalized",
+    "origin": "top-left",
+    "defaultPivot": { "x": 0.5, "y": 0.875 },
+    "safeBounds": { "left": 0.125, "top": 0.0625, "right": 0.875, "bottom": 0.875 },
+    "notes": "All pose references use the same canvas and floor line. Keep the contact foot on pivot.y unless a frame is airborne."
+  },
+  "animations": [
+    {
+      "id": "idle-breathe-4",
+      "name": { "ko": "숨쉬기 대기", "en": "Breathing Idle" },
+      "purpose": { "ko": "펫이 멈춰 있을 때 생명감을 주는 4프레임 반복", "en": "A four-frame loop that gives a stationary pet subtle life" },
+      "rigProfile": "round-or-upright",
+      "demoPetId": "nari-plum-owl",
+      "loop": true,
+      "frames": [
+        { "assetId": "pose.idle-breathe-4.00", "index": 0, "durationMs": 260, "phase": "neutral", "bodyOffset": { "x": 0, "y": 0 }, "floorContact": true },
+        { "assetId": "pose.idle-breathe-4.01", "index": 1, "durationMs": 260, "phase": "inhale", "bodyOffset": { "x": 0, "y": -0.015625 }, "floorContact": true },
+        { "assetId": "pose.idle-breathe-4.02", "index": 2, "durationMs": 260, "phase": "full-breath", "bodyOffset": { "x": 0, "y": -0.03125 }, "floorContact": true },
+        { "assetId": "pose.idle-breathe-4.03", "index": 3, "durationMs": 260, "phase": "exhale", "bodyOffset": { "x": 0, "y": -0.015625 }, "floorContact": true }
+      ]
+    },
+    {
+      "id": "walk-cycle-8",
+      "name": { "ko": "8프레임 걷기", "en": "Eight-Frame Walk" },
+      "purpose": { "ko": "좌우 접지와 상하 움직임이 자연스럽게 이어지는 8프레임 반복", "en": "An eight-frame loop with alternating contacts and readable vertical motion" },
+      "rigProfile": "upright-or-light-quadruped",
+      "demoPetId": "bori-cloud-fox",
+      "loop": true,
+      "frames": [
+        { "assetId": "pose.walk-cycle-8.00", "index": 0, "durationMs": 90, "phase": "left-contact", "bodyOffset": { "x": 0, "y": 0 }, "floorContact": true },
+        { "assetId": "pose.walk-cycle-8.01", "index": 1, "durationMs": 90, "phase": "left-recoil", "bodyOffset": { "x": 0, "y": 0.015625 }, "floorContact": true },
+        { "assetId": "pose.walk-cycle-8.02", "index": 2, "durationMs": 90, "phase": "left-passing", "bodyOffset": { "x": 0, "y": 0 }, "floorContact": true },
+        { "assetId": "pose.walk-cycle-8.03", "index": 3, "durationMs": 90, "phase": "left-high-point", "bodyOffset": { "x": 0, "y": -0.015625 }, "floorContact": true },
+        { "assetId": "pose.walk-cycle-8.04", "index": 4, "durationMs": 90, "phase": "right-contact", "bodyOffset": { "x": 0, "y": 0 }, "floorContact": true },
+        { "assetId": "pose.walk-cycle-8.05", "index": 5, "durationMs": 90, "phase": "right-recoil", "bodyOffset": { "x": 0, "y": 0.015625 }, "floorContact": true },
+        { "assetId": "pose.walk-cycle-8.06", "index": 6, "durationMs": 90, "phase": "right-passing", "bodyOffset": { "x": 0, "y": 0 }, "floorContact": true },
+        { "assetId": "pose.walk-cycle-8.07", "index": 7, "durationMs": 90, "phase": "right-high-point", "bodyOffset": { "x": 0, "y": -0.015625 }, "floorContact": true }
+      ]
+    },
+    {
+      "id": "jump-arc-6",
+      "name": { "ko": "6프레임 점프", "en": "Six-Frame Jump Arc" },
+      "purpose": { "ko": "웅크림부터 착지까지 한 번 재생되는 6프레임 점프", "en": "A six-frame one-shot jump from anticipation through landing" },
+      "rigProfile": "upright-with-long-appendages",
+      "demoPetId": "dodo-moon-rabbit",
+      "loop": false,
+      "frames": [
+        { "assetId": "pose.jump-arc-6.00", "index": 0, "durationMs": 120, "phase": "anticipation-crouch", "bodyOffset": { "x": 0, "y": 0.03125 }, "floorContact": true },
+        { "assetId": "pose.jump-arc-6.01", "index": 1, "durationMs": 90, "phase": "takeoff", "bodyOffset": { "x": 0, "y": -0.0625 }, "floorContact": false },
+        { "assetId": "pose.jump-arc-6.02", "index": 2, "durationMs": 90, "phase": "rise", "bodyOffset": { "x": 0, "y": -0.171875 }, "floorContact": false },
+        { "assetId": "pose.jump-arc-6.03", "index": 3, "durationMs": 130, "phase": "apex", "bodyOffset": { "x": 0, "y": -0.21875 }, "floorContact": false },
+        { "assetId": "pose.jump-arc-6.04", "index": 4, "durationMs": 90, "phase": "fall", "bodyOffset": { "x": 0, "y": -0.109375 }, "floorContact": false },
+        { "assetId": "pose.jump-arc-6.05", "index": 5, "durationMs": 150, "phase": "landing-squash", "bodyOffset": { "x": 0, "y": 0.03125 }, "floorContact": true }
+      ]
+    },
+    {
+      "id": "sleep-loop-4",
+      "name": { "ko": "잠자기 반복", "en": "Sleeping Loop" },
+      "purpose": { "ko": "몸을 낮춘 채 천천히 호흡하는 4프레임 수면 반복", "en": "A four-frame sleeping loop with the body lowered and slow breathing" },
+      "rigProfile": "low-horizontal-or-curled",
+      "demoPetId": "chori-lemon-gecko",
+      "loop": true,
+      "frames": [
+        { "assetId": "pose.sleep-loop-4.00", "index": 0, "durationMs": 320, "phase": "settle", "bodyOffset": { "x": 0, "y": 0.0625 }, "floorContact": true },
+        { "assetId": "pose.sleep-loop-4.01", "index": 1, "durationMs": 420, "phase": "sleep-exhale", "bodyOffset": { "x": 0, "y": 0.078125 }, "floorContact": true },
+        { "assetId": "pose.sleep-loop-4.02", "index": 2, "durationMs": 320, "phase": "sleep-inhale", "bodyOffset": { "x": 0, "y": 0.0625 }, "floorContact": true },
+        { "assetId": "pose.sleep-loop-4.03", "index": 3, "durationMs": 420, "phase": "sleep-exhale", "bodyOffset": { "x": 0, "y": 0.078125 }, "floorContact": true }
+      ]
+    },
+    {
+      "id": "happy-reaction-6",
+      "name": { "ko": "기쁜 반응", "en": "Happy Reaction" },
+      "purpose": { "ko": "클릭이나 보상에 반응하는 스쿼시·스트레치 기반 6프레임 동작", "en": "A six-frame squash-and-stretch reaction for clicks or rewards" },
+      "rigProfile": "any-compact",
+      "demoPetId": "muru-mint-axolotl",
+      "loop": false,
+      "frames": [
+        { "assetId": "pose.happy-reaction-6.00", "index": 0, "durationMs": 100, "phase": "neutral", "bodyOffset": { "x": 0, "y": 0 }, "floorContact": true },
+        { "assetId": "pose.happy-reaction-6.01", "index": 1, "durationMs": 90, "phase": "notice", "bodyOffset": { "x": 0, "y": -0.015625 }, "floorContact": true },
+        { "assetId": "pose.happy-reaction-6.02", "index": 2, "durationMs": 100, "phase": "anticipation-squash", "bodyOffset": { "x": 0, "y": 0.03125 }, "floorContact": true },
+        { "assetId": "pose.happy-reaction-6.03", "index": 3, "durationMs": 120, "phase": "happy-pop", "bodyOffset": { "x": 0, "y": -0.078125 }, "floorContact": false },
+        { "assetId": "pose.happy-reaction-6.04", "index": 4, "durationMs": 100, "phase": "overshoot", "bodyOffset": { "x": 0, "y": -0.03125 }, "floorContact": false },
+        { "assetId": "pose.happy-reaction-6.05", "index": 5, "durationMs": 180, "phase": "settle", "bodyOffset": { "x": 0, "y": 0 }, "floorContact": true }
+      ]
+    }
+  ]
+}

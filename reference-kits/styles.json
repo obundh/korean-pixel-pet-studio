@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "1.0.0",
+  "styles": [
+    {
+      "id": "soft-cluster-16",
+      "name": { "ko": "소프트 클러스터 16", "en": "Soft Cluster 16" },
+      "description": {
+        "ko": "둥근 2~4픽셀 색 덩어리와 따뜻한 외곽선을 쓰는 차분한 오리지널 픽셀 스타일",
+        "en": "A calm original pixel style using rounded 2-to-4-pixel color clusters and a warm outline"
+      },
+      "canvas": { "width": 64, "height": 64, "logicalGrid": 32 },
+      "paletteMax": 16,
+      "outline": { "pixels": 1, "rule": "single dark chromatic outline; never pure black" },
+      "shading": { "steps": 2, "dithering": "none" },
+      "pixelRules": [
+        "hard square pixel edges",
+        "no anti-aliasing or semi-transparent edge pixels",
+        "clusters must remain readable when viewed at 1x",
+        "nearest-neighbor scaling only"
+      ],
+      "promptFragment": {
+        "ko": "64×64 투명 캔버스, 32×32 논리 격자, 최대 16색, 순검정이 아닌 1픽셀 유채색 외곽선, 둥근 2~4픽셀 색 덩어리, 2단계 명암, 디더링과 안티앨리어싱 없음, 정수 픽셀 좌표만 사용",
+        "en": "64x64 transparent canvas on a 32x32 logical grid, at most 16 colors, a one-pixel dark chromatic outline rather than pure black, rounded 2-to-4-pixel clusters, two-step shading, no dithering, no anti-aliasing, integer pixel coordinates only"
+      },
+      "previewAssetId": "style.soft-cluster-16.reference",
+      "recommendedFor": ["friendly mascots", "small desktop pets", "light interfaces"]
+    },
+    {
+      "id": "bold-outline-32",
+      "name": { "ko": "볼드 아웃라인 32", "en": "Bold Outline 32" },
+      "description": {
+        "ko": "두꺼운 외곽선과 선명한 명암 대비로 작은 실루엣을 강조하는 오리지널 픽셀 스타일",
+        "en": "An original pixel style that emphasizes small silhouettes with a thick outline and crisp value contrast"
+      },
+      "canvas": { "width": 64, "height": 64, "logicalGrid": 32 },
+      "paletteMax": 24,
+      "outline": { "pixels": 2, "rule": "two-pixel near-black colored outline with selective inner lines" },
+      "shading": { "steps": 3, "dithering": "none" },
+      "pixelRules": [
+        "large staircase curves with intentional corners",
+        "two-pixel outer outline and one-pixel inner details",
+        "no blur, glow, texture, or anti-aliasing",
+        "keep facial features at least two pixels apart"
+      ],
+      "promptFragment": {
+        "ko": "64×64 투명 캔버스, 32×32 논리 격자, 최대 24색, 2픽셀 남흑색 외곽선과 선택적인 1픽셀 내부선, 3단계 명암, 큰 계단형 곡선, 디더링·광택·블러·안티앨리어싱 없음",
+        "en": "64x64 transparent canvas on a 32x32 logical grid, at most 24 colors, a two-pixel near-black colored outer outline with selective one-pixel inner lines, three-step shading, large staircase curves, no dithering, gloss, blur, or anti-aliasing"
+      },
+      "previewAssetId": "style.bold-outline-32.reference",
+      "recommendedFor": ["round mascots", "high-contrast UI", "dark or busy desktop backgrounds"]
+    },
+    {
+      "id": "pastel-dither-48",
+      "name": { "ko": "파스텔 디더 48", "en": "Pastel Dither 48" },
+      "description": {
+        "ko": "밝은 파스텔 팔레트와 제한적인 체크 디더링으로 부드러운 부피감을 내는 오리지널 픽셀 스타일",
+        "en": "An original pixel style with a bright pastel palette and restrained checker dithering for soft volume"
+      },
+      "canvas": { "width": 96, "height": 96, "logicalGrid": 48 },
+      "paletteMax": 28,
+      "outline": { "pixels": 1, "rule": "selective one-pixel outline, darker version of the local fill" },
+      "shading": { "steps": 3, "dithering": "sparse one-pixel checker pattern only in broad shadow transitions" },
+      "pixelRules": [
+        "use dithering on less than ten percent of the silhouette",
+        "keep the face and signature marks free of dithering",
+        "no anti-aliasing or soft transparency",
+        "two display pixels per logical pixel"
+      ],
+      "promptFragment": {
+        "ko": "96×96 투명 캔버스, 48×48 논리 격자, 최대 28색의 밝은 파스텔 팔레트, 채움색보다 어두운 선택적 1픽셀 외곽선, 3단계 명암, 넓은 그림자 전환부에만 10% 미만의 성긴 체크 디더링, 얼굴에는 디더링 금지, 안티앨리어싱 없음",
+        "en": "96x96 transparent canvas on a 48x48 logical grid, at most 28 bright pastel colors, a selective one-pixel outline using a darker local fill, three-step shading, sparse checker dithering on less than ten percent of broad shadow transitions, no dithering on the face, no anti-aliasing"
+      },
+      "previewAssetId": "style.pastel-dither-48.reference",
+      "recommendedFor": ["aquatic mascots", "soft gradients translated to pixels", "larger desktop pets"]
+    },
+    {
+      "id": "neon-night-32",
+      "name": { "ko": "네온 나이트 32", "en": "Neon Night 32" },
+      "description": {
+        "ko": "짙은 남색 외곽선과 제한된 청록·노랑 하이라이트로 어두운 배경에서 선명한 오리지널 픽셀 스타일",
+        "en": "An original pixel style with deep navy outlines and restrained cyan and yellow highlights for dark backgrounds"
+      },
+      "canvas": { "width": 64, "height": 64, "logicalGrid": 32 },
+      "paletteMax": 20,
+      "outline": { "pixels": 1, "rule": "one-pixel deep navy outline, two pixels only beneath feet" },
+      "shading": { "steps": 3, "dithering": "none" },
+      "pixelRules": [
+        "bright accents are solid pixel clusters, never blurred glow",
+        "accent pixels occupy less than fifteen percent of the sprite",
+        "transparent background remains fully transparent",
+        "no bloom, gradients, or anti-aliasing"
+      ],
+      "promptFragment": {
+        "ko": "64×64 투명 캔버스, 32×32 논리 격자, 최대 20색, 1픽셀 짙은 남색 외곽선, 청록과 노랑의 단단한 픽셀 하이라이트는 전체의 15% 미만, 3단계 명암, 빛 번짐·그라디언트·블러·안티앨리어싱 없음",
+        "en": "64x64 transparent canvas on a 32x32 logical grid, at most 20 colors, a one-pixel deep navy outline, solid cyan and yellow pixel highlights covering less than fifteen percent of the sprite, three-step shading, no bloom, gradient, blur, or anti-aliasing"
+      },
+      "previewAssetId": "style.neon-night-32.reference",
+      "recommendedFor": ["dark mode", "night-themed mascots", "high color separation"]
+    },
+    {
+      "id": "paper-cut-48",
+      "name": { "ko": "페이퍼 컷 48", "en": "Paper Cut 48" },
+      "description": {
+        "ko": "종이를 오린 듯한 넓은 단색 면과 짧은 계단형 곡선을 쓰는 오리지널 픽셀 스타일",
+        "en": "An original pixel style using broad flat color planes and short staircase curves reminiscent of cut paper"
+      },
+      "canvas": { "width": 96, "height": 96, "logicalGrid": 48 },
+      "paletteMax": 24,
+      "outline": { "pixels": 0, "rule": "no global outline; separate adjacent forms by value and hue" },
+      "shading": { "steps": 2, "dithering": "none" },
+      "pixelRules": [
+        "broad flat clusters with no texture",
+        "one-pixel notches may clarify toes, ears, and tail overlaps",
+        "use hue and value boundaries instead of a global outline",
+        "no paper fibers, shadows outside the silhouette, or anti-aliasing"
+      ],
+      "promptFragment": {
+        "ko": "96×96 투명 캔버스, 48×48 논리 격자, 최대 24색, 전체 외곽선 없이 명도와 색상 차이로 면 분리, 넓고 평평한 색 덩어리, 2단계 명암, 발가락·귀·꼬리 겹침에만 1픽셀 홈, 종이 질감·외부 그림자·디더링·안티앨리어싱 없음",
+        "en": "96x96 transparent canvas on a 48x48 logical grid, at most 24 colors, no global outline, forms separated by hue and value, broad flat color clusters, two-step shading, one-pixel notches only for toes, ears, and tail overlaps, no paper texture, outside shadow, dithering, or anti-aliasing"
+      },
+      "previewAssetId": "style.paper-cut-48.reference",
+      "recommendedFor": ["long or low silhouettes", "bright UI", "minimal mascots"]
+    }
+  ],
+  "globalAvoid": [
+    "names or visual imitation of living artists",
+    "copyrighted game, animation, comic, or film character styles",
+    "logos, watermarks, letters, UI frames, and captions",
+    "anti-aliased edges, vector-smooth curves, blur, and unintended transparency inside the sprite"
+  ]
+}

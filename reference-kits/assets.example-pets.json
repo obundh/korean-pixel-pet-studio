@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "1.0.0",
+  "assetCount": 10,
+  "assets": [
+    {
+      "id": "pet.bori-cloud-fox.source",
+      "kind": "example-character-source",
+      "filename": "images/example-pets/bori-cloud-fox-source.png",
+      "purpose": { "ko": "보리의 비픽셀 캐릭터 정체성 원본", "en": "Non-pixel character identity source for Bori" },
+      "examplePetIds": ["bori-cloud-fox"],
+      "referenceInputs": [],
+      "canvas": { "width": 1024, "height": 1024, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Create one completely original friendly fox mascot named Bori, not based on any existing character, game, animation, brand, or artist. Show a centered three-quarter standing view with a compact upright body and a clearly readable silhouette. Use an apricot-orange body, cream muzzle and cheek tufts, dark triangular ear tips, a short teal scarf with exactly two square ends, and one oversized crescent-shaped tail whose final third is cream. Put exactly three small cream tufts on each cheek. Use clean flat shapes with simple two-step cel shading, crisp edges, and no pixel-art treatment. Keep both ears, both feet, the full scarf, and the entire tail visible. Isolate the mascot on a fully transparent background with generous empty margin. No props, scenery, floor, cast shadow, text, logo, watermark, border, extra limbs, duplicate character, or copyrighted visual references. Return a single 1024x1024 PNG with straight alpha."
+    },
+    {
+      "id": "pet.bori-cloud-fox.preview",
+      "kind": "example-pixel-output",
+      "filename": "images/example-pets/bori-cloud-fox-preview.png",
+      "purpose": { "ko": "보리와 소프트 클러스터 16 조합의 완성 예시", "en": "Finished example combining Bori with Soft Cluster 16" },
+      "examplePetIds": ["bori-cloud-fox"],
+      "stylePresetId": "soft-cluster-16",
+      "referenceInputs": ["pet.bori-cloud-fox.source", "style.soft-cluster-16.reference"],
+      "canvas": { "width": 64, "height": 64, "logicalGrid": 32, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Use REFERENCE 1 only for the exact identity, colors, facial proportions, teal scarf, cheek tufts, and crescent tail of the original fox mascot. Use REFERENCE 2 only for pixel cluster size, outline behavior, palette economy, and shading language; do not copy its subject or silhouette. Redraw the same fox in a neutral three-quarter standing pose as an original 64x64 transparent pixel-art desktop pet on a 32x32 logical grid. Preserve both dark ear tips, exactly three cream cheek tufts per side, two square scarf ends, and a cream tail tip covering about one third of the single tail. Use at most 16 colors, a one-logical-pixel dark chromatic outline rather than pure black, rounded two-to-four-pixel clusters, and two-step shading. Align both feet to one shared floor line and center the visual mass. Hard square edges only; no anti-aliasing, blur, gradient, dithering, cast shadow, ground, scenery, text, logo, watermark, extra limb, duplicate tail, or design borrowed from an existing character or artist. Return only one RGBA PNG."
+    },
+    {
+      "id": "pet.muru-mint-axolotl.source",
+      "kind": "example-character-source",
+      "filename": "images/example-pets/muru-mint-axolotl-source.png",
+      "purpose": { "ko": "무루의 비픽셀 캐릭터 정체성 원본", "en": "Non-pixel character identity source for Muru" },
+      "examplePetIds": ["muru-mint-axolotl"],
+      "referenceInputs": [],
+      "canvas": { "width": 1024, "height": 1024, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Create one completely original friendly axolotl mascot named Muru, not based on any existing character, game, animation, brand, or artist. Show a centered three-quarter view with a low, wide, horizontal body, four short rounded feet, a wide oval face with two simple dot eyes, and a small paddle tail curving upward. Use a mint body, pale mint belly, deeper turquoise shadow, and exactly three coral external-gill fronds on each side of the head, six total. Make each gill frond distinct and keep the body unmistakably amphibian rather than fish-like or upright. Use clean flat shapes with simple two-step cel shading and crisp non-pixel edges. Isolate the whole mascot on a fully transparent background with generous margin. No fins, horns, wings, clothing, props, scenery, floor, cast shadow, text, logo, watermark, border, extra limbs, duplicate character, or copyrighted visual references. Return a single 1024x1024 PNG with straight alpha."
+    },
+    {
+      "id": "pet.muru-mint-axolotl.preview",
+      "kind": "example-pixel-output",
+      "filename": "images/example-pets/muru-mint-axolotl-preview.png",
+      "purpose": { "ko": "무루와 파스텔 디더 48 조합의 완성 예시", "en": "Finished example combining Muru with Pastel Dither 48" },
+      "examplePetIds": ["muru-mint-axolotl"],
+      "stylePresetId": "pastel-dither-48",
+      "referenceInputs": ["pet.muru-mint-axolotl.source", "style.pastel-dither-48.reference"],
+      "canvas": { "width": 96, "height": 96, "logicalGrid": 48, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Use REFERENCE 1 only for the exact identity, mint and coral palette, low proportions, four feet, paddle tail, and six external-gill fronds of the original axolotl mascot. Use REFERENCE 2 only for pixel scale, pastel palette handling, selective outline, and sparse dithering language; do not copy its subject. Redraw the same axolotl in a neutral three-quarter standing pose as an original 96x96 transparent pixel-art desktop pet on a 48x48 logical grid. Preserve exactly three coral gill fronds on each side, a wide oval face, four rounded feet, a pale belly, and one upward-curved paddle tail. Use at most 28 colors, a selective one-logical-pixel outline darker than the local fill, three-step shading, and sparse checker dithering on less than ten percent of broad body-shadow transitions; keep face and gills free of dithering. Align all feet to one shared floor line. Hard square edges only; no anti-aliasing, soft alpha, blur, gradient, cast shadow, ground, scenery, text, logo, watermark, extra fin, extra limb, or visual imitation of an existing character or artist. Return only one RGBA PNG."
+    },
+    {
+      "id": "pet.nari-plum-owl.source",
+      "kind": "example-character-source",
+      "filename": "images/example-pets/nari-plum-owl-source.png",
+      "purpose": { "ko": "나리의 비픽셀 캐릭터 정체성 원본", "en": "Non-pixel character identity source for Nari" },
+      "examplePetIds": ["nari-plum-owl"],
+      "referenceInputs": [],
+      "canvas": { "width": 1024, "height": 1024, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Create one completely original friendly owl mascot named Nari, not based on any existing character, game, animation, brand, or artist. Show a centered front three-quarter standing view with a nearly circular plum-purple body, a pale lavender belly, two outward-pointing ear tufts, two connected gold eye rings forming a soft figure-eight shape, a small gold beak, two tiny feet, and short wings with exactly three rounded scallops along the lower edge of each wing. Keep both eye rings symmetric and make each wing shorter than half the body height. Use clean flat shapes with simple two-step cel shading and crisp non-pixel edges. Isolate the whole mascot on a fully transparent background with generous margin. No hats, glasses, clothing, props, scenery, floor, cast shadow, text, emblem, logo, watermark, border, extra wings, duplicate character, or copyrighted visual references. Return a single 1024x1024 PNG with straight alpha."
+    },
+    {
+      "id": "pet.nari-plum-owl.preview",
+      "kind": "example-pixel-output",
+      "filename": "images/example-pets/nari-plum-owl-preview.png",
+      "purpose": { "ko": "나리와 볼드 아웃라인 32 조합의 완성 예시", "en": "Finished example combining Nari with Bold Outline 32" },
+      "examplePetIds": ["nari-plum-owl"],
+      "stylePresetId": "bold-outline-32",
+      "referenceInputs": ["pet.nari-plum-owl.source", "style.bold-outline-32.reference"],
+      "canvas": { "width": 64, "height": 64, "logicalGrid": 32, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Use REFERENCE 1 only for the exact identity, plum palette, circular proportions, connected gold eye rings, ear tufts, scalloped wings, and two feet of the original owl mascot. Use REFERENCE 2 only for pixel scale, thick outline, curve rhythm, and shading language; do not copy its subject. Redraw the same owl in a neutral front three-quarter standing pose as an original 64x64 transparent pixel-art desktop pet on a 32x32 logical grid. Preserve two symmetric gold eye rings, two outward ear tufts, two wings shorter than half the body, exactly three visible lower scallops per wing, and two grounded feet. Use at most 24 colors, a two-logical-pixel near-black colored outer outline, selective one-pixel inner lines, three-step shading, and deliberate large staircase curves. Hard square edges only; no anti-aliasing, blur, gloss, dithering, gradient, cast shadow, ground, scenery, text, logo, watermark, added accessory, extra wing, or visual imitation of an existing character or artist. Return only one RGBA PNG."
+    },
+    {
+      "id": "pet.chori-lemon-gecko.source",
+      "kind": "example-character-source",
+      "filename": "images/example-pets/chori-lemon-gecko-source.png",
+      "purpose": { "ko": "초리의 비픽셀 캐릭터 정체성 원본", "en": "Non-pixel character identity source for Chori" },
+      "examplePetIds": ["chori-lemon-gecko"],
+      "referenceInputs": [],
+      "canvas": { "width": 1024, "height": 1024, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Create one completely original friendly gecko mascot named Chori, not based on any existing character, game, animation, brand, or artist. Show a centered three-quarter view with a low body wider than tall, a wedge-shaped head, lemon-yellow back, lime belly and feet, two orange oval cheek marks, four splayed feet with exactly three rounded toes on each foot, and one flat tail that forms a single continuous inward spiral. Keep every foot close to one floor plane and make the unbroken tail curl fully visible behind the body. Use clean broad flat shapes with simple two-step cel shading and crisp non-pixel edges. Isolate the mascot on a fully transparent background with generous margin. No clothing, props, scenery, floor, cast shadow, text, logo, watermark, border, split tail, extra limb, duplicate character, or copyrighted visual references. Return a single 1024x1024 PNG with straight alpha."
+    },
+    {
+      "id": "pet.chori-lemon-gecko.preview",
+      "kind": "example-pixel-output",
+      "filename": "images/example-pets/chori-lemon-gecko-preview.png",
+      "purpose": { "ko": "초리와 페이퍼 컷 48 조합의 완성 예시", "en": "Finished example combining Chori with Paper Cut 48" },
+      "examplePetIds": ["chori-lemon-gecko"],
+      "stylePresetId": "paper-cut-48",
+      "referenceInputs": ["pet.chori-lemon-gecko.source", "style.paper-cut-48.reference"],
+      "canvas": { "width": 96, "height": 96, "logicalGrid": 48, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Use REFERENCE 1 only for the exact identity, lemon and lime palette, orange cheeks, low wedge-shaped body, four three-toed feet, and single spiral tail of the original gecko mascot. Use REFERENCE 2 only for pixel scale, broad flat clusters, outline-free separation, and shading language; do not copy its subject. Redraw the same gecko in a neutral three-quarter standing pose as an original 96x96 transparent pixel-art desktop pet on a 48x48 logical grid. Preserve four grounded feet with exactly three rounded toes each, two orange cheek ovals, and one unbroken flat tail curling inward once. Use at most 24 colors, no global outline, hue and value boundaries between forms, broad flat clusters, two-step shading, and one-pixel notches only where toes and tail overlap. Hard square edges only; no anti-aliasing, paper fibers, texture, external shadow, blur, gradient, dithering, scenery, text, logo, watermark, split tail, extra limb, or visual imitation of an existing character or artist. Return only one RGBA PNG."
+    },
+    {
+      "id": "pet.dodo-moon-rabbit.source",
+      "kind": "example-character-source",
+      "filename": "images/example-pets/dodo-moon-rabbit-source.png",
+      "purpose": { "ko": "도도의 비픽셀 캐릭터 정체성 원본", "en": "Non-pixel character identity source for Dodo" },
+      "examplePetIds": ["dodo-moon-rabbit"],
+      "referenceInputs": [],
+      "canvas": { "width": 1024, "height": 1024, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Create one completely original friendly rabbit mascot named Dodo, not based on any existing character, game, animation, brand, or artist. Show a centered front three-quarter upright pose with a compact navy body, two tall ears, a slightly bent left ear, a straight right ear, sky-blue inner ears, a pale round belly patch, a small pale round tail visible on the right side, and one plain small gold circle centered on the forehead. The forehead mark must be an unadorned circle, never a star, crescent, rune, or magical symbol. Use clean flat shapes with simple two-step cel shading and crisp non-pixel edges. Keep both compact feet on one floor plane and the full ear silhouette inside the canvas. Isolate the mascot on a fully transparent background with generous margin. No clothing, props, scenery, floor, cast shadow, text, logo, watermark, border, extra ears, duplicate character, or copyrighted visual references. Return a single 1024x1024 PNG with straight alpha."
+    },
+    {
+      "id": "pet.dodo-moon-rabbit.preview",
+      "kind": "example-pixel-output",
+      "filename": "images/example-pets/dodo-moon-rabbit-preview.png",
+      "purpose": { "ko": "도도와 네온 나이트 32 조합의 완성 예시", "en": "Finished example combining Dodo with Neon Night 32" },
+      "examplePetIds": ["dodo-moon-rabbit"],
+      "stylePresetId": "neon-night-32",
+      "referenceInputs": ["pet.dodo-moon-rabbit.source", "style.neon-night-32.reference"],
+      "canvas": { "width": 64, "height": 64, "logicalGrid": 32, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Use REFERENCE 1 only for the exact identity, navy palette, asymmetric ears, sky-blue inner ears, pale belly and tail, and plain gold forehead circle of the original rabbit mascot. Use REFERENCE 2 only for pixel scale, navy outline, solid cyan and yellow accents, and shading language; do not copy its subject. Redraw the same rabbit in a neutral front three-quarter standing pose as an original 64x64 transparent pixel-art desktop pet on a 32x32 logical grid. Preserve a bent left ear, straight right ear, one unadorned circular forehead mark, pale round belly patch, small right-side tail, and two grounded compact feet. Use at most 20 colors, a one-logical-pixel deep navy outline, solid cyan and yellow highlight clusters covering less than fifteen percent of the sprite, and three-step shading. Keep the background fully transparent; the bright accents must not glow outside the silhouette. Hard square edges only; no anti-aliasing, bloom, blur, gradient, cast shadow, scenery, text, logo, watermark, magical symbol, extra ear, or visual imitation of an existing character or artist. Return only one RGBA PNG."
+    }
+  ]
+}

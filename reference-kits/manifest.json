@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "1.0.0",
+  "kit": {
+    "id": "pixelpet-original-reference-kit-v1",
+    "name": { "ko": "PixelPet 오리지널 레퍼런스 키트 v1", "en": "PixelPet Original Reference Kit v1" },
+    "description": {
+      "ko": "사용자 캐릭터 정체성은 유지하면서 오리지널 픽셀 스타일과 동작만 전달하는 생성 레퍼런스 세트",
+      "en": "A generation reference set that transfers original pixel styles and motion while preserving the user's character identity"
+    },
+    "copyrightPolicy": "All bundled examples, calibration subjects, style systems, and pose guides are original. They intentionally avoid named artists, copyrighted games, and recognizable franchise characters.",
+    "generatedAssetNotice": "Example and style PNGs were generated with the catalog prompts plus a flat chroma-key background-removal pass. Pose PNGs are deterministic outputs of scripts/generate-pose-references.mjs; their catalog prompts are provider-ready AI regeneration alternatives. JSON metadata is authoritative for filenames and linkage."
+  },
+  "assetBaseUrl": "/reference-kits/",
+  "filenameResolution": "Resolve every asset filename by appending it directly to assetBaseUrl. Filenames never begin with a slash.",
+  "catalogFiles": {
+    "pets": "pets.json",
+    "styles": "styles.json",
+    "animations": "animations.json",
+    "assets": [
+      "assets.example-pets.json",
+      "assets.style-references.json",
+      "assets.pose-references.json"
+    ]
+  },
+  "counts": {
+    "examplePets": 5,
+    "stylePresets": 5,
+    "animations": 5,
+    "animationFrames": 28,
+    "imageAssetEntries": 43,
+    "exampleCharacterSources": 5,
+    "examplePixelOutputs": 5,
+    "styleReferences": 5,
+    "poseReferences": 28
+  },
+  "runtimeCatalog": {
+    "examplePets": [
+      {
+        "id": "bori-cloud-fox",
+        "name": { "ko": "구름여우 보리", "en": "Bori the Cloud Fox" },
+        "animal": { "ko": "여우", "en": "fox" },
+        "sourceAssetId": "pet.bori-cloud-fox.source",
+        "sourceFilename": "images/example-pets/bori-cloud-fox-source.png",
+        "previewAssetId": "pet.bori-cloud-fox.preview",
+        "previewFilename": "images/example-pets/bori-cloud-fox-preview.png",
+        "defaultStyleId": "soft-cluster-16",
+        "demonstratedAnimationIds": ["walk-cycle-8"]
+      },
+      {
+        "id": "muru-mint-axolotl",
+        "name": { "ko": "민트우파루파 무루", "en": "Muru the Mint Axolotl" },
+        "animal": { "ko": "우파루파", "en": "axolotl" },
+        "sourceAssetId": "pet.muru-mint-axolotl.source",
+        "sourceFilename": "images/example-pets/muru-mint-axolotl-source.png",
+        "previewAssetId": "pet.muru-mint-axolotl.preview",
+        "previewFilename": "images/example-pets/muru-mint-axolotl-preview.png",
+        "defaultStyleId": "pastel-dither-48",
+        "demonstratedAnimationIds": ["happy-reaction-6"]
+      },
+      {
+        "id": "nari-plum-owl",
+        "name": { "ko": "자두부엉이 나리", "en": "Nari the Plum Owl" },
+        "animal": { "ko": "부엉이", "en": "owl" },
+        "sourceAssetId": "pet.nari-plum-owl.source",
+        "sourceFilename": "images/example-pets/nari-plum-owl-source.png",
+        "previewAssetId": "pet.nari-plum-owl.preview",
+        "previewFilename": "images/example-pets/nari-plum-owl-preview.png",
+        "defaultStyleId": "bold-outline-32",
+        "demonstratedAnimationIds": ["idle-breathe-4"]
+      },
+      {
+        "id": "chori-lemon-gecko",
+        "name": { "ko": "레몬도마뱀 초리", "en": "Chori the Lemon Gecko" },
+        "animal": { "ko": "도마뱀붙이", "en": "gecko" },
+        "sourceAssetId": "pet.chori-lemon-gecko.source",
+        "sourceFilename": "images/example-pets/chori-lemon-gecko-source.png",
+        "previewAssetId": "pet.chori-lemon-gecko.preview",
+        "previewFilename": "images/example-pets/chori-lemon-gecko-preview.png",
+        "defaultStyleId": "paper-cut-48",
+        "demonstratedAnimationIds": ["sleep-loop-4"]
+      },
+      {
+        "id": "dodo-moon-rabbit",
+        "name": { "ko": "달토끼 도도", "en": "Dodo the Moon Rabbit" },
+        "animal": { "ko": "토끼", "en": "rabbit" },
+        "sourceAssetId": "pet.dodo-moon-rabbit.source",
+        "sourceFilename": "images/example-pets/dodo-moon-rabbit-source.png",
+        "previewAssetId": "pet.dodo-moon-rabbit.preview",
+        "previewFilename": "images/example-pets/dodo-moon-rabbit-preview.png",
+        "defaultStyleId": "neon-night-32",
+        "demonstratedAnimationIds": ["jump-arc-6"]
+      }
+    ],
+    "styles": [
+      {
+        "id": "soft-cluster-16",
+        "name": { "ko": "소프트 클러스터 16", "en": "Soft Cluster 16" },
+        "canvas": { "width": 64, "height": 64, "logicalGrid": 32 },
+        "paletteMax": 16,
+        "previewAssetId": "style.soft-cluster-16.reference",
+        "previewFilename": "images/styles/soft-cluster-16-reference.png"
+      },
+      {
+        "id": "bold-outline-32",
+        "name": { "ko": "볼드 아웃라인 32", "en": "Bold Outline 32" },
+        "canvas": { "width": 64, "height": 64, "logicalGrid": 32 },
+        "paletteMax": 24,
+        "previewAssetId": "style.bold-outline-32.reference",
+        "previewFilename": "images/styles/bold-outline-32-reference.png"
+      },
+      {
+        "id": "pastel-dither-48",
+        "name": { "ko": "파스텔 디더 48", "en": "Pastel Dither 48" },
+        "canvas": { "width": 96, "height": 96, "logicalGrid": 48 },
+        "paletteMax": 28,
+        "previewAssetId": "style.pastel-dither-48.reference",
+        "previewFilename": "images/styles/pastel-dither-48-reference.png"
+      },
+      {
+        "id": "neon-night-32",
+        "name": { "ko": "네온 나이트 32", "en": "Neon Night 32" },
+        "canvas": { "width": 64, "height": 64, "logicalGrid": 32 },
+        "paletteMax": 20,
+        "previewAssetId": "style.neon-night-32.reference",
+        "previewFilename": "images/styles/neon-night-32-reference.png"
+      },
+      {
+        "id": "paper-cut-48",
+        "name": { "ko": "페이퍼 컷 48", "en": "Paper Cut 48" },
+        "canvas": { "width": 96, "height": 96, "logicalGrid": 48 },
+        "paletteMax": 24,
+        "previewAssetId": "style.paper-cut-48.reference",
+        "previewFilename": "images/styles/paper-cut-48-reference.png"
+      }
+    ],
+    "animations": [
+      {
+        "id": "idle-breathe-4",
+        "name": { "ko": "숨쉬기 대기", "en": "Breathing Idle" },
+        "loop": true,
+        "demoPetId": "nari-plum-owl",
+        "frames": [
+          { "assetId": "pose.idle-breathe-4.00", "filename": "images/poses/idle-breathe-4-f00-neutral.png", "durationMs": 260 },
+          { "assetId": "pose.idle-breathe-4.01", "filename": "images/poses/idle-breathe-4-f01-inhale.png", "durationMs": 260 },
+          { "assetId": "pose.idle-breathe-4.02", "filename": "images/poses/idle-breathe-4-f02-full-breath.png", "durationMs": 260 },
+          { "assetId": "pose.idle-breathe-4.03", "filename": "images/poses/idle-breathe-4-f03-exhale.png", "durationMs": 260 }
+        ]
+      },
+      {
+        "id": "walk-cycle-8",
+        "name": { "ko": "8프레임 걷기", "en": "Eight-Frame Walk" },
+        "loop": true,
+        "demoPetId": "bori-cloud-fox",
+        "frames": [
+          { "assetId": "pose.walk-cycle-8.00", "filename": "images/poses/walk-cycle-8-f00-left-contact.png", "durationMs": 90 },
+          { "assetId": "pose.walk-cycle-8.01", "filename": "images/poses/walk-cycle-8-f01-left-recoil.png", "durationMs": 90 },
+          { "assetId": "pose.walk-cycle-8.02", "filename": "images/poses/walk-cycle-8-f02-left-passing.png", "durationMs": 90 },
+          { "assetId": "pose.walk-cycle-8.03", "filename": "images/poses/walk-cycle-8-f03-left-high.png", "durationMs": 90 },
+          { "assetId": "pose.walk-cycle-8.04", "filename": "images/poses/walk-cycle-8-f04-right-contact.png", "durationMs": 90 },
+          { "assetId": "pose.walk-cycle-8.05", "filename": "images/poses/walk-cycle-8-f05-right-recoil.png", "durationMs": 90 },
+          { "assetId": "pose.walk-cycle-8.06", "filename": "images/poses/walk-cycle-8-f06-right-passing.png", "durationMs": 90 },
+          { "assetId": "pose.walk-cycle-8.07", "filename": "images/poses/walk-cycle-8-f07-right-high.png", "durationMs": 90 }
+        ]
+      },
+      {
+        "id": "jump-arc-6",
+        "name": { "ko": "6프레임 점프", "en": "Six-Frame Jump Arc" },
+        "loop": false,
+        "demoPetId": "dodo-moon-rabbit",
+        "frames": [
+          { "assetId": "pose.jump-arc-6.00", "filename": "images/poses/jump-arc-6-f00-crouch.png", "durationMs": 120 },
+          { "assetId": "pose.jump-arc-6.01", "filename": "images/poses/jump-arc-6-f01-takeoff.png", "durationMs": 90 },
+          { "assetId": "pose.jump-arc-6.02", "filename": "images/poses/jump-arc-6-f02-rise.png", "durationMs": 90 },
+          { "assetId": "pose.jump-arc-6.03", "filename": "images/poses/jump-arc-6-f03-apex.png", "durationMs": 130 },
+          { "assetId": "pose.jump-arc-6.04", "filename": "images/poses/jump-arc-6-f04-fall.png", "durationMs": 90 },
+          { "assetId": "pose.jump-arc-6.05", "filename": "images/poses/jump-arc-6-f05-landing.png", "durationMs": 150 }
+        ]
+      },
+      {
+        "id": "sleep-loop-4",
+        "name": { "ko": "잠자기 반복", "en": "Sleeping Loop" },
+        "loop": true,
+        "demoPetId": "chori-lemon-gecko",
+        "frames": [
+          { "assetId": "pose.sleep-loop-4.00", "filename": "images/poses/sleep-loop-4-f00-settle.png", "durationMs": 320 },
+          { "assetId": "pose.sleep-loop-4.01", "filename": "images/poses/sleep-loop-4-f01-exhale.png", "durationMs": 420 },
+          { "assetId": "pose.sleep-loop-4.02", "filename": "images/poses/sleep-loop-4-f02-inhale.png", "durationMs": 320 },
+          { "assetId": "pose.sleep-loop-4.03", "filename": "images/poses/sleep-loop-4-f03-exhale.png", "durationMs": 420 }
+        ]
+      },
+      {
+        "id": "happy-reaction-6",
+        "name": { "ko": "기쁜 반응", "en": "Happy Reaction" },
+        "loop": false,
+        "demoPetId": "muru-mint-axolotl",
+        "frames": [
+          { "assetId": "pose.happy-reaction-6.00", "filename": "images/poses/happy-reaction-6-f00-neutral.png", "durationMs": 100 },
+          { "assetId": "pose.happy-reaction-6.01", "filename": "images/poses/happy-reaction-6-f01-notice.png", "durationMs": 90 },
+          { "assetId": "pose.happy-reaction-6.02", "filename": "images/poses/happy-reaction-6-f02-squash.png", "durationMs": 100 },
+          { "assetId": "pose.happy-reaction-6.03", "filename": "images/poses/happy-reaction-6-f03-pop.png", "durationMs": 120 },
+          { "assetId": "pose.happy-reaction-6.04", "filename": "images/poses/happy-reaction-6-f04-overshoot.png", "durationMs": 100 },
+          { "assetId": "pose.happy-reaction-6.05", "filename": "images/poses/happy-reaction-6-f05-settle.png", "durationMs": 180 }
+        ]
+      }
+    ]
+  }
+}

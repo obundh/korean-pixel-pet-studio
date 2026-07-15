@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "1.0.0",
+  "assetCount": 5,
+  "assets": [
+    {
+      "id": "style.soft-cluster-16.reference",
+      "kind": "style-reference",
+      "filename": "images/styles/soft-cluster-16-reference.png",
+      "purpose": { "ko": "캐릭터 정체성이 없는 소프트 클러스터 16 스타일 기준", "en": "Identity-neutral Soft Cluster 16 style reference" },
+      "examplePetIds": ["bori-cloud-fox"],
+      "stylePresetId": "soft-cluster-16",
+      "referenceInputs": [],
+      "canvas": { "width": 64, "height": 64, "logicalGrid": 32, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Create an original identity-neutral pixel-art style calibration object, not a recognizable animal, mascot, franchise character, or artist imitation. The object is one featureless asymmetrical bean-shaped volume resting on two tiny block feet, with no face, ears, tail, clothing, symbol, or story detail. Render it on a 64x64 transparent canvas using a 32x32 logical grid, at most 16 warm colors, one-logical-pixel dark chromatic outline rather than pure black, rounded two-to-four-pixel clusters, and two-step lighting from upper left. Use a coral main fill, cream light plane, teal accent plane, and muted plum shadow solely to demonstrate palette relationships. Center the object and align both feet to one floor line. Every edge must be a hard square pixel edge on integer coordinates. No anti-aliasing, blur, gradient, dithering, texture, external shadow, ground, frame, text, logo, watermark, duplicate object, or semi-transparent edge. Return only one RGBA PNG."
+    },
+    {
+      "id": "style.bold-outline-32.reference",
+      "kind": "style-reference",
+      "filename": "images/styles/bold-outline-32-reference.png",
+      "purpose": { "ko": "캐릭터 정체성이 없는 볼드 아웃라인 32 스타일 기준", "en": "Identity-neutral Bold Outline 32 style reference" },
+      "examplePetIds": ["nari-plum-owl"],
+      "stylePresetId": "bold-outline-32",
+      "referenceInputs": [],
+      "canvas": { "width": 64, "height": 64, "logicalGrid": 32, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Create an original identity-neutral pixel-art style calibration object, not a recognizable animal, mascot, franchise character, or artist imitation. The object is one featureless round volume with two simple rectangular supports, no face, ears, tail, clothing, symbol, or narrative detail. Render it on a 64x64 transparent canvas using a 32x32 logical grid and at most 24 colors. Use a two-logical-pixel near-black colored outer outline, selective one-pixel inner separation lines, three-step plum-to-lavender shading, one small gold accent patch, and deliberate large staircase curves that clearly demonstrate the outline rhythm. Center the object and align its supports to one floor line. Hard square pixel edges only. No anti-aliasing, blur, gloss, gradient, dithering, texture, cast shadow, ground, frame, text, logo, watermark, duplicate object, or semi-transparent edge. Return only one RGBA PNG."
+    },
+    {
+      "id": "style.pastel-dither-48.reference",
+      "kind": "style-reference",
+      "filename": "images/styles/pastel-dither-48-reference.png",
+      "purpose": { "ko": "캐릭터 정체성이 없는 파스텔 디더 48 스타일 기준", "en": "Identity-neutral Pastel Dither 48 style reference" },
+      "examplePetIds": ["muru-mint-axolotl"],
+      "stylePresetId": "pastel-dither-48",
+      "referenceInputs": [],
+      "canvas": { "width": 96, "height": 96, "logicalGrid": 48, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Create an original identity-neutral pixel-art style calibration object, not a recognizable animal, mascot, franchise character, or artist imitation. The object is one featureless low oval volume on four tiny rounded block supports, no face, gills, ears, tail, clothing, symbol, or story detail. Render it on a 96x96 transparent canvas using a 48x48 logical grid and at most 28 bright pastel colors. Use a selective one-logical-pixel outline darker than each local fill, three-step mint-and-coral shading, and sparse one-pixel checker dithering only across one broad shadow transition and covering less than ten percent of the object. Leave the top focal area completely undithered. Center the object and align all supports to one floor line. Hard square pixel edges only. No anti-aliasing, blur, smooth gradient, dense noise, texture, cast shadow, ground, frame, text, logo, watermark, duplicate object, or semi-transparent edge. Return only one RGBA PNG."
+    },
+    {
+      "id": "style.neon-night-32.reference",
+      "kind": "style-reference",
+      "filename": "images/styles/neon-night-32-reference.png",
+      "purpose": { "ko": "캐릭터 정체성이 없는 네온 나이트 32 스타일 기준", "en": "Identity-neutral Neon Night 32 style reference" },
+      "examplePetIds": ["dodo-moon-rabbit"],
+      "stylePresetId": "neon-night-32",
+      "referenceInputs": [],
+      "canvas": { "width": 64, "height": 64, "logicalGrid": 32, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Create an original identity-neutral pixel-art style calibration object, not a recognizable animal, mascot, franchise character, or artist imitation. The object is one featureless upright capsule volume on two compact block feet, no face, ears, tail, clothing, symbol, or narrative detail. Render it on a 64x64 transparent canvas using a 32x32 logical grid and at most 20 colors. Use a one-logical-pixel deep navy outline, three-step navy and indigo shading, and a few solid cyan and yellow pixel highlight clusters that cover less than fifteen percent of the silhouette. The accents must remain crisp blocks with no glow outside the object. Center it and align both feet to one floor line. Hard square pixel edges only. No anti-aliasing, bloom, blur, gradient, dithering, texture, cast shadow, dark background rectangle, ground, frame, text, logo, watermark, duplicate object, or semi-transparent edge. Return only one RGBA PNG."
+    },
+    {
+      "id": "style.paper-cut-48.reference",
+      "kind": "style-reference",
+      "filename": "images/styles/paper-cut-48-reference.png",
+      "purpose": { "ko": "캐릭터 정체성이 없는 페이퍼 컷 48 스타일 기준", "en": "Identity-neutral Paper Cut 48 style reference" },
+      "examplePetIds": ["chori-lemon-gecko"],
+      "stylePresetId": "paper-cut-48",
+      "referenceInputs": [],
+      "canvas": { "width": 96, "height": 96, "logicalGrid": 48, "background": "transparent" },
+      "generationPromptLanguage": "en",
+      "generationPrompt": "Create an original identity-neutral pixel-art style calibration object, not a recognizable animal, mascot, franchise character, or artist imitation. The object is one featureless low wedge-shaped volume with four flat block supports and one simple curled strip attached behind it, but no face, animal anatomy, clothing, symbol, or story detail. Render it on a 96x96 transparent canvas using a 48x48 logical grid and at most 24 colors. Use no global outline: separate broad lemon, lime, cream, and orange flat planes only by hue and value. Use two-step shading and a few one-logical-pixel notches where supports and the curled strip overlap. Center the object and align all supports to one floor line. Hard square pixel edges only. No paper fibers, texture, anti-aliasing, external shadow, blur, gradient, dithering, ground, frame, text, logo, watermark, duplicate object, or semi-transparent edge. Return only one RGBA PNG."
+    }
+  ]
+}

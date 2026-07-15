@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "1.0.0",
+  "templates": [
+    {
+      "id": "gpt-ko",
+      "provider": "gpt",
+      "language": "ko",
+      "file": "gpt.ko.md",
+      "stages": ["canonical-master", "animation-frame", "correction"]
+    },
+    {
+      "id": "gpt-en",
+      "provider": "gpt",
+      "language": "en",
+      "file": "gpt.en.md",
+      "stages": ["canonical-master", "animation-frame", "correction"]
+    },
+    {
+      "id": "gemini-ko",
+      "provider": "gemini",
+      "language": "ko",
+      "file": "gemini.ko.md",
+      "stages": ["canonical-master", "animation-frame", "correction"]
+    },
+    {
+      "id": "gemini-en",
+      "provider": "gemini",
+      "language": "en",
+      "file": "gemini.en.md",
+      "stages": ["canonical-master", "animation-frame", "correction"]
+    }
+  ],
+  "requiredVariables": {
+    "canonical-master": [
+      "CHARACTER_DESCRIPTION",
+      "IDENTITY_LOCKS",
+      "STYLE_NAME",
+      "STYLE_RULES",
+      "CANVAS_WIDTH",
+      "CANVAS_HEIGHT",
+      "LOGICAL_GRID",
+      "PALETTE_MAX",
+      "VIEW",
+      "OUTPUT_FILENAME"
+    ],
+    "animation-frame": [
+      "IDENTITY_LOCKS",
+      "STYLE_NAME",
+      "STYLE_RULES",
+      "CANVAS_WIDTH",
+      "CANVAS_HEIGHT",
+      "LOGICAL_GRID",
+      "PALETTE_MAX",
+      "ACTION_NAME",
+      "FRAME_INDEX",
+      "FRAME_COUNT",
+      "POSE_PHASE",
+      "ANCHOR_X",
+      "ANCHOR_Y",
+      "FRAME_NOTES",
+      "OUTPUT_FILENAME"
+    ],
+    "correction": [
+      "IDENTITY_LOCKS",
+      "STYLE_RULES",
+      "CANVAS_WIDTH",
+      "CANVAS_HEIGHT",
+      "LOGICAL_GRID",
+      "PALETTE_MAX",
+      "CORRECTION_LIST",
+      "OUTPUT_FILENAME"
+    ]
+  },
+  "referenceOrder": {
+    "canonical-master": ["CHARACTER_REFERENCE", "STYLE_REFERENCE"],
+    "animation-frame": ["CANONICAL_PIXEL_MASTER", "STYLE_REFERENCE", "POSE_REFERENCE", "CHARACTER_REFERENCE_OPTIONAL"],
+    "correction": ["FAILED_OUTPUT", "CANONICAL_PIXEL_MASTER", "STYLE_REFERENCE_OPTIONAL"]
+  }
+}

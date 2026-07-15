@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "1.0.0",
+  "pets": [
+    {
+      "id": "bori-cloud-fox",
+      "name": { "ko": "구름여우 보리", "en": "Bori the Cloud Fox" },
+      "animal": { "ko": "여우", "en": "fox" },
+      "silhouetteClass": "upright-small-with-crescent-tail",
+      "summary": {
+        "ko": "살구색 몸, 크림색 얼굴과 꼬리 끝, 초록빛 목도리, 큰 초승달 꼬리가 특징인 오리지널 여우 펫",
+        "en": "An original fox pet with an apricot body, cream face and tail tip, teal scarf, and a large crescent tail"
+      },
+      "palette": [
+        { "role": "outline", "hex": "#3B2B3A" },
+        { "role": "body", "hex": "#F28B5B" },
+        { "role": "muzzle-and-tail-tip", "hex": "#FFE0B5" },
+        { "role": "scarf", "hex": "#2FA7A0" },
+        { "role": "highlight", "hex": "#FFF4D8" }
+      ],
+      "signatureTraits": [
+        "one oversized crescent-shaped tail",
+        "three small cream tufts on each cheek",
+        "short teal scarf with two square ends",
+        "dark triangular ear tips"
+      ],
+      "mustPreserve": [
+        "both ears visible in the neutral pose",
+        "cream tail tip occupies about one third of the tail",
+        "scarf never becomes a collar, cape, or bow",
+        "no logos, letters, or existing franchise symbols"
+      ],
+      "defaultStyleId": "soft-cluster-16",
+      "sourceAssetId": "pet.bori-cloud-fox.source",
+      "previewAssetId": "pet.bori-cloud-fox.preview",
+      "demonstratedAnimationIds": ["walk-cycle-8"]
+    },
+    {
+      "id": "muru-mint-axolotl",
+      "name": { "ko": "민트우파루파 무루", "en": "Muru the Mint Axolotl" },
+      "animal": { "ko": "우파루파", "en": "axolotl" },
+      "silhouetteClass": "low-horizontal-with-six-gill-fronds",
+      "summary": {
+        "ko": "민트색 몸, 산호색 외부 아가미 여섯 갈래, 넓고 낮은 실루엣의 오리지널 우파루파 펫",
+        "en": "An original low, wide axolotl pet with a mint body and six coral external-gill fronds"
+      },
+      "palette": [
+        { "role": "outline", "hex": "#243B4A" },
+        { "role": "body", "hex": "#75D7C6" },
+        { "role": "belly", "hex": "#C9F4DD" },
+        { "role": "gills", "hex": "#FF7C86" },
+        { "role": "shadow", "hex": "#4BA8A5" }
+      ],
+      "signatureTraits": [
+        "exactly three coral gill fronds on each side of the head",
+        "small paddle tail curving upward",
+        "wide oval face with two dot eyes",
+        "four short rounded feet"
+      ],
+      "mustPreserve": [
+        "six total gill fronds remain readable at sprite scale",
+        "body stays low and horizontal rather than upright",
+        "no fish fins, horns, wings, text, or logos",
+        "coral gills remain distinct from the mint body"
+      ],
+      "defaultStyleId": "pastel-dither-48",
+      "sourceAssetId": "pet.muru-mint-axolotl.source",
+      "previewAssetId": "pet.muru-mint-axolotl.preview",
+      "demonstratedAnimationIds": ["happy-reaction-6"]
+    },
+    {
+      "id": "nari-plum-owl",
+      "name": { "ko": "자두부엉이 나리", "en": "Nari the Plum Owl" },
+      "animal": { "ko": "부엉이", "en": "owl" },
+      "silhouetteClass": "round-winged-with-two-ear-tufts",
+      "summary": {
+        "ko": "자두색 둥근 몸, 금색 눈 테두리, 짧은 날개와 두 귀깃을 가진 오리지널 부엉이 펫",
+        "en": "An original round plum owl pet with gold eye rings, short wings, and two ear tufts"
+      },
+      "palette": [
+        { "role": "outline", "hex": "#251F38" },
+        { "role": "body", "hex": "#77508F" },
+        { "role": "belly", "hex": "#BFA7D4" },
+        { "role": "eye-rings-and-beak", "hex": "#F3C85B" },
+        { "role": "shadow", "hex": "#4E3B68" }
+      ],
+      "signatureTraits": [
+        "nearly circular body silhouette",
+        "two outward-pointing ear tufts",
+        "two connected gold eye rings shaped like a soft figure eight",
+        "three scallops along the bottom of each short wing"
+      ],
+      "mustPreserve": [
+        "both gold eye rings stay symmetric",
+        "wings remain shorter than half the body height",
+        "two feet are visible when standing",
+        "no hats, glasses, letters, emblems, or franchise cues"
+      ],
+      "defaultStyleId": "bold-outline-32",
+      "sourceAssetId": "pet.nari-plum-owl.source",
+      "previewAssetId": "pet.nari-plum-owl.preview",
+      "demonstratedAnimationIds": ["idle-breathe-4"]
+    },
+    {
+      "id": "chori-lemon-gecko",
+      "name": { "ko": "레몬도마뱀 초리", "en": "Chori the Lemon Gecko" },
+      "animal": { "ko": "도마뱀붙이", "en": "gecko" },
+      "silhouetteClass": "low-four-legged-with-spiral-tail",
+      "summary": {
+        "ko": "레몬색 등, 라임색 배와 발가락, 나선형 꼬리가 특징인 오리지널 도마뱀붙이 펫",
+        "en": "An original low gecko pet with a lemon back, lime belly and toes, and a spiral tail"
+      },
+      "palette": [
+        { "role": "outline", "hex": "#33423B" },
+        { "role": "back", "hex": "#F2D64B" },
+        { "role": "belly-and-toes", "hex": "#A8D95B" },
+        { "role": "cheek", "hex": "#F89B62" },
+        { "role": "highlight", "hex": "#FFF2A2" }
+      ],
+      "signatureTraits": [
+        "one flat spiral tail with a single inward curl",
+        "four splayed feet with three rounded toes each",
+        "orange oval cheek marks",
+        "low wedge-shaped head"
+      ],
+      "mustPreserve": [
+        "all four feet remain close to the ground plane",
+        "tail remains one continuous spiral rather than splitting",
+        "body is wider than it is tall",
+        "no clothing, text, logos, or recognizable character accessories"
+      ],
+      "defaultStyleId": "paper-cut-48",
+      "sourceAssetId": "pet.chori-lemon-gecko.source",
+      "previewAssetId": "pet.chori-lemon-gecko.preview",
+      "demonstratedAnimationIds": ["sleep-loop-4"]
+    },
+    {
+      "id": "dodo-moon-rabbit",
+      "name": { "ko": "달토끼 도도", "en": "Dodo the Moon Rabbit" },
+      "animal": { "ko": "토끼", "en": "rabbit" },
+      "silhouetteClass": "upright-tall-ears-with-round-tail",
+      "summary": {
+        "ko": "남색 몸, 하늘색 긴 귀 안쪽, 별이 아닌 작은 원형 이마 무늬를 가진 오리지널 토끼 펫",
+        "en": "An original navy rabbit pet with long sky-blue inner ears and a simple circular forehead mark"
+      },
+      "palette": [
+        { "role": "outline", "hex": "#161B35" },
+        { "role": "body", "hex": "#33467B" },
+        { "role": "inner-ears", "hex": "#74C7E8" },
+        { "role": "belly-and-tail", "hex": "#D8EDFA" },
+        { "role": "forehead-dot", "hex": "#F2D36B" }
+      ],
+      "signatureTraits": [
+        "two tall ears with unequal tips, left ear slightly bent",
+        "single small gold circle centered on the forehead",
+        "round pale belly patch",
+        "small round tail visible on the right side"
+      ],
+      "mustPreserve": [
+        "forehead mark is a plain circle, never a star or crescent",
+        "left ear is bent and right ear is straight",
+        "rabbit stays upright with compact feet",
+        "no text, logos, magical symbols, clothing, or franchise cues"
+      ],
+      "defaultStyleId": "neon-night-32",
+      "sourceAssetId": "pet.dodo-moon-rabbit.source",
+      "previewAssetId": "pet.dodo-moon-rabbit.preview",
+      "demonstratedAnimationIds": ["jump-arc-6"]
+    }
+  ]
+}

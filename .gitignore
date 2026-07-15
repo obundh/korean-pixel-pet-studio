@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-electron/
+release/
+coverage/
+public/reference-kits/
+public/background-removal/
+.DS_Store
+*.log
+*.local
+.env
+.env.*
+!.env.example
+tmp/
