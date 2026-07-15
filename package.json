@@ -8,11 +8,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/obundh/pixel-pet-studio.git"
+    "url": "https://github.com/obundh/korean-pixel-pet-studio.git"
   },
-  "homepage": "https://github.com/obundh/pixel-pet-studio#readme",
+  "homepage": "https://github.com/obundh/korean-pixel-pet-studio#readme",
   "bugs": {
-    "url": "https://github.com/obundh/pixel-pet-studio/issues"
+    "url": "https://github.com/obundh/korean-pixel-pet-studio/issues"
   },
   "keywords": [
     "pixel-art",
@@ -29,6 +29,8 @@
     "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "smoke:quick-pet": "cross-env ELECTRON_RUN_AS_NODE= electron scripts/smoke-quick-pet.cjs",
+    "samples:build": "npm run build && cross-env ELECTRON_RUN_AS_NODE= electron scripts/build-beginner-pets.cjs",
     "build": "npm run prepare:assets && npm run typecheck && vite build && tsc -p tsconfig.electron.json",
     "dist": "npm run build && electron-builder --publish never",
     "dist:mac": "npm run build && electron-builder --mac dmg zip --x64 --arm64 --publish never",

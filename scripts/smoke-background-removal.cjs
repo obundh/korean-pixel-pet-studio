@@ -97,13 +97,32 @@ app.whenReady().then(async () => {
           [0, resultCanvas.height - 1],
           [resultCanvas.width - 1, resultCanvas.height - 1],
         ].map(([x, y]) => resultContext.getImageData(x, y, 1, 1).data[3]);
-        return { width: resultCanvas.width, height: resultCanvas.height, cornerAlpha: corners };
+        const pixels = resultContext.getImageData(
+          0,
+          0,
+          resultCanvas.width,
+          resultCanvas.height,
+        ).data;
+        let foregroundPixels = 0;
+        for (let index = 3; index < pixels.length; index += 4) {
+          if (pixels[index] > 8) foregroundPixels += 1;
+        }
+        return {
+          width: resultCanvas.width,
+          height: resultCanvas.height,
+          cornerAlpha: corners,
+          foregroundPixels,
+        };
       })()`, true),
       timeout(150000, "background-removal smoke test timed out"),
     ]);
     console.log(JSON.stringify(result));
     if (!result.cornerAlpha.every((alpha) => alpha <= 8)) {
       throw new Error(`background remained at the corners: ${result.cornerAlpha.join(",")}`);
+    }
+    const totalPixels = result.width * result.height;
+    if (result.foregroundPixels < 1000 || result.foregroundPixels > totalPixels * 0.75) {
+      throw new Error(`foreground segmentation was implausible: ${result.foregroundPixels}/${totalPixels}`);
     }
     window.destroy();
     app.quit();

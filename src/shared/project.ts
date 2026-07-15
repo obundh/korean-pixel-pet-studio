@@ -9,6 +9,17 @@ export const PET_ANIMATION_NAMES = [
 ] as const;
 
 export type PetAnimationName = (typeof PET_ANIMATION_NAMES)[number];
+export type PixelPetChromaKey = [number, number, number];
+
+export function isPixelPetChromaKey(value: unknown): value is PixelPetChromaKey {
+  return (
+    Array.isArray(value) &&
+    value.length === 3 &&
+    value.every(
+      (channel) => Number.isInteger(channel) && channel >= 0 && channel <= 255,
+    )
+  );
+}
 
 export interface PixelPetFrameAsset {
   id: string;
@@ -18,6 +29,7 @@ export interface PixelPetFrameAsset {
   width: number;
   height: number;
   backgroundRemoved: boolean;
+  chromaKey?: PixelPetChromaKey;
   updatedAt: string;
 }
 

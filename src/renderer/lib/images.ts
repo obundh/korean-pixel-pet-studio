@@ -1,7 +1,19 @@
 import type { FrameAsset } from "../types";
+import {
+  ACCEPTED_IMAGE_TYPES,
+  MAX_IMAGE_BYTES,
+  parseEncodedImageDimensions,
+  validateImageDimensions,
+} from "../../shared/image-validation";
 
-export const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
-export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+export {
+  ACCEPTED_IMAGE_TYPES,
+  MAX_IMAGE_BYTES,
+  MAX_IMAGE_EDGE,
+  MAX_IMAGE_PIXELS,
+  parseEncodedImageDimensions,
+  validateImageDimensions,
+} from "../../shared/image-validation";
 
 const makeId = (): string =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -39,8 +51,20 @@ export const getImageDimensions = (
 export const createFrameAsset = async (file: File): Promise<FrameAsset> => {
   const validationError = validateImageFile(file);
   if (validationError) throw new Error(validationError);
+  const encodedDimensions = parseEncodedImageDimensions(
+    new Uint8Array(await file.arrayBuffer()),
+    file.type,
+  );
+  if (!encodedDimensions) throw new Error("이미지 헤더에서 크기를 확인하지 못했습니다.");
+  const encodedDimensionError = validateImageDimensions(
+    encodedDimensions.width,
+    encodedDimensions.height,
+  );
+  if (encodedDimensionError) throw new Error(encodedDimensionError);
   const dataUrl = await fileToDataUrl(file);
   const { width, height } = await getImageDimensions(dataUrl);
+  const dimensionError = validateImageDimensions(width, height);
+  if (dimensionError) throw new Error(dimensionError);
   return {
     id: makeId(),
     name: file.name,

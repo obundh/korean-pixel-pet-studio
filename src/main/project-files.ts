@@ -13,9 +13,11 @@ import type {
 import {
   PET_ANIMATION_NAMES,
   PIXELPET_PROJECT_VERSION,
+  isPixelPetChromaKey,
   type PixelPetFrameAsset,
   type PixelPetProject,
 } from "../shared/project.js";
+import { inspectImageDataUrl } from "../shared/image-validation.js";
 
 const MAX_PROJECT_BYTES = 128 * 1024 * 1024;
 const MAX_EXPORT_BYTES = 256 * 1024 * 1024;
@@ -58,14 +60,28 @@ function isPositiveFiniteNumber(value: unknown): value is number {
 function isFrameAsset(value: unknown): value is PixelPetFrameAsset {
   if (!isRecord(value)) return false;
 
+  if (!Number.isInteger(value.width) || !Number.isInteger(value.height)) return false;
+  const dataImage = typeof value.dataUrl === "string" ? inspectImageDataUrl(value.dataUrl) : null;
+  const originalImage =
+    typeof value.originalDataUrl === "string"
+      ? value.originalDataUrl === value.dataUrl
+        ? dataImage
+        : inspectImageDataUrl(value.originalDataUrl)
+      : null;
+
   return (
     isNonEmptyString(value.id) &&
     isNonEmptyString(value.name) &&
-    typeof value.dataUrl === "string" &&
-    typeof value.originalDataUrl === "string" &&
+    dataImage !== null &&
+    originalImage !== null &&
     isPositiveFiniteNumber(value.width) &&
     isPositiveFiniteNumber(value.height) &&
+    dataImage.width === value.width &&
+    dataImage.height === value.height &&
+    originalImage.width === value.width &&
+    originalImage.height === value.height &&
     typeof value.backgroundRemoved === "boolean" &&
+    (value.chromaKey === undefined || isPixelPetChromaKey(value.chromaKey)) &&
     isNonEmptyString(value.updatedAt)
   );
 }

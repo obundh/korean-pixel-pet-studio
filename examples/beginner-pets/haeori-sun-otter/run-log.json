@@ -1,0 +1,160 @@
+{
+  "schemaVersion": "1.0.0",
+  "sampleId": "haeori-sun-otter",
+  "public": true,
+  "startedAt": "2026-07-15T14:48:03.415Z",
+  "completedAt": "2026-07-15T14:48:13.770Z",
+  "source": {
+    "path": "examples/beginner-pets/haeori-sun-otter/pixel-master-chroma.png",
+    "sha256": "3eacb959121b00ae507ab82b92b47c9458759c975545da4b2a3605cc0bfee5ce",
+    "bytes": 1103730
+  },
+  "pipeline": {
+    "app": "PixelPet Studio",
+    "appVersion": "0.1.0",
+    "mode": "hidden-electron-browser-mode",
+    "entryPoint": "Step 3 / quick-pet UI",
+    "imageProcessing": "PixelPet quick UI only; no external image post-processing",
+    "backgroundRemoval": "performed",
+    "backgroundRemovalModel": "IMG.LY isnet_quint8 / CPU",
+    "flatChromaPostprocess": {
+      "applied": true,
+      "keyRgb": [
+        251,
+        4,
+        236
+      ],
+      "operations": [
+        "key-distance matte",
+        "despill",
+        "pixel hard-alpha"
+      ]
+    },
+    "fit": "cleaned alpha bbox / bottom-center / nearest-neighbor",
+    "idlePreset": [
+      "neutral",
+      "inhale-up",
+      "soft-squash",
+      "exhale"
+    ],
+    "canvas": {
+      "width": 64,
+      "height": 64
+    },
+    "frameDiagnostics": [
+      {
+        "width": 64,
+        "height": 64,
+        "opaquePixels": 1314,
+        "softAlphaPixels": 0,
+        "chromaFringePixels": 0,
+        "alphaBounds": {
+          "x": 14,
+          "y": 5,
+          "width": 36,
+          "height": 54
+        },
+        "largestEnclosedTransparentRegion": 0
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "opaquePixels": 1314,
+        "softAlphaPixels": 0,
+        "chromaFringePixels": 0,
+        "alphaBounds": {
+          "x": 14,
+          "y": 4,
+          "width": 36,
+          "height": 54
+        },
+        "largestEnclosedTransparentRegion": 0
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "opaquePixels": 1278,
+        "softAlphaPixels": 0,
+        "chromaFringePixels": 0,
+        "alphaBounds": {
+          "x": 13,
+          "y": 7,
+          "width": 38,
+          "height": 52
+        },
+        "largestEnclosedTransparentRegion": 0
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "opaquePixels": 1292,
+        "softAlphaPixels": 0,
+        "chromaFringePixels": 0,
+        "alphaBounds": {
+          "x": 14,
+          "y": 6,
+          "width": 36,
+          "height": 53
+        },
+        "largestEnclosedTransparentRegion": 0
+      }
+    ],
+    "fps": 8,
+    "scale": 3
+  },
+  "appExports": {
+    "project": "examples/beginner-pets/haeori-sun-otter/haeori-sun-otter.pixelpet",
+    "spriteSheet": "examples/beginner-pets/haeori-sun-otter/haeori-sun-otter-spritesheet.png",
+    "projectExportButton": "export-project-json",
+    "spriteSheetExportButton": "export-spritesheet",
+    "downloadTransport": "Electron will-download"
+  },
+  "generatedFrames": [
+    "examples/beginner-pets/haeori-sun-otter/generated/idle-01.png",
+    "examples/beginner-pets/haeori-sun-otter/generated/idle-02.png",
+    "examples/beginner-pets/haeori-sun-otter/generated/idle-03.png",
+    "examples/beginner-pets/haeori-sun-otter/generated/idle-04.png"
+  ],
+  "preview": "examples/beginner-pets/haeori-sun-otter/app-preview.png",
+  "desktopPetVerification": {
+    "status": "running",
+    "animation": "idle",
+    "size": {
+      "width": 192,
+      "height": 192
+    },
+    "position": {
+      "x": 1504,
+      "y": 828
+    },
+    "windowVisible": true,
+    "alwaysOnTop": true,
+    "capture": {
+      "width": 384,
+      "height": 384
+    },
+    "nonTransparentPixels": 47304,
+    "captureSha256": "b90ee364f4244918aaa152a44570596b023496b1ea819abd510ea26d8cd767a0",
+    "verificationPath": "exported project -> WindowManager.startPet -> visible pet capture"
+  },
+  "reproducibility": {
+    "deterministic": false,
+    "reason": "Frame UUIDs, timestamps, and animated preview capture vary between runs.",
+    "stableInputs": "Source SHA-256, app version, pipeline settings, and every completed output hash are recorded.",
+    "runtime": {
+      "node": "24.18.0",
+      "electron": "43.1.1",
+      "chrome": "150.0.7871.114"
+    }
+  },
+  "outputSha256": {
+    "examples/beginner-pets/haeori-sun-otter/haeori-sun-otter.pixelpet": "3a106fd1805f1aeca3ad4af77c8e57b9402858fcdb5307817d6756960510456a",
+    "examples/beginner-pets/haeori-sun-otter/haeori-sun-otter-spritesheet.png": "8c163a27b2999a30e4c9de7afe7ea19738cf17a3054dc3267692c8040a11bb49",
+    "examples/beginner-pets/haeori-sun-otter/generated/idle-01.png": "c7bc2b301b31297301ce4574038e2fdb02df538037ccca9620d0c9d53d691cf4",
+    "examples/beginner-pets/haeori-sun-otter/generated/idle-02.png": "5fefa41496d4642097f33af564dc4fed11fddc288686121d144a18b29f644d83",
+    "examples/beginner-pets/haeori-sun-otter/generated/idle-03.png": "74fb0b6ab614fef783e5d451f6bd67357a9bfee7a95c2a1632be127209caf8e9",
+    "examples/beginner-pets/haeori-sun-otter/generated/idle-04.png": "c88eab8d75ee07e3ddb7200418a4def0068f02b1dd5952ecd1bc2e334476b8f0",
+    "examples/beginner-pets/haeori-sun-otter/app-preview.png": "4bc2abed25d2baeec4522489941ea985d8b38c182ad34066660af454ac407f92"
+  },
+  "rightsBoundary": "Original public sample assets created for this repository."
+}

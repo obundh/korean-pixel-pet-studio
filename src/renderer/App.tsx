@@ -11,17 +11,23 @@ import type { PetWindowState } from "../shared/ipc";
 import type { PixelPetProject } from "../shared/project";
 import { Icon, type IconName } from "./components/Icon";
 import { PetSurface } from "./components/PetSurface";
+import { removeImageBackground } from "./lib/backgroundRemoval";
 import {
   createFrameAsset,
   dataUrlToBlob,
   downloadTextFile,
   fileToDataUrl,
 } from "./lib/images";
+import {
+  createQuickPetFrames,
+  imageHasMeaningfulTransparency,
+  parseCanvasSize,
+  postprocessFlatChromaDataUrl,
+} from "./lib/quickPet";
 import { loadReferenceCatalog } from "./lib/referenceCatalog";
 import {
   ANIMATION_STATES,
   type AnimationState,
-  type ExamplePet,
   type FrameAsset,
   type FrameCollection,
   type PoseReferenceSet,
@@ -36,6 +42,15 @@ type RemovalState = {
   phase: "idle" | "loading" | "processing" | "success" | "error";
   progress: number;
   detail: string;
+};
+type QuickPetState = {
+  phase: "idle" | "reading" | "removing" | "generating" | "success" | "error";
+  progress: number;
+  detail: string;
+  fileName?: string;
+  backgroundRemoval?: "skipped" | "performed";
+  chromaCleanup?: "applied" | "not-needed";
+  chromaKey?: string;
 };
 
 const STEP_ITEMS: Array<{
@@ -167,35 +182,32 @@ const slugify = (value: string): string =>
 const motionFromPoseId = (poseId: string): AnimationState | undefined =>
   ANIMATION_STATES.find((state) => poseId.toLowerCase().includes(state));
 
-const buildPrompt = (
-  example: ExamplePet | undefined,
-  style: StyleReference | undefined,
-  pose: PoseReferenceSet | undefined,
-): string => {
+const buildPrompt = (style: StyleReference | undefined): string => {
   const dimensions = style?.canvas ?? "64 × 64";
   const palette = style?.paletteMax ? `최대 ${style.paletteMax}색` : "제한된 색상 팔레트";
   return [
     "[역할]",
-    "당신은 게임용 픽셀 캐릭터와 스프라이트 애니메이션 전문 아티스트입니다.",
+    "당신은 캐릭터 정체성을 보존하는 게임용 픽셀 캐릭터 전문 아티스트입니다.",
     "",
     "[첨부 이미지의 역할]",
     "1번 이미지는 변형하면 안 되는 원본 마스코트입니다. 얼굴, 대표 색상, 로고, 의상과 고유 장식을 정확히 유지하세요.",
-    `스타일 레퍼런스는 '${style?.label ?? "소프트 픽셀아트"}'의 픽셀 크기, 외곽선과 명암 방식만 참고하세요. 다른 캐릭터의 생김새는 복사하지 마세요.`,
-    `포즈 레퍼런스는 '${pose?.label ?? "기본 대기"}'의 실루엣, 무게중심과 프레임 순서만 참고하세요.`,
+    `2번 이미지는 '${style?.label ?? "소프트 픽셀아트"}' 스타일 레퍼런스입니다. 픽셀 크기, 외곽선과 명암 방식만 참고하고 다른 캐릭터의 생김새는 복사하지 마세요.`,
+    "",
+    "[할 일]",
+    "원본 마스코트가 한눈에 같은 캐릭터로 보이는 중립 자세의 기준 픽셀 마스터 한 장을 만드세요. 정면 또는 원본을 가장 잘 알아볼 수 있는 자연스러운 3/4 시점으로 서 있고, 팔다리와 대표 장식이 가려지지 않아야 합니다.",
     "",
     "[출력 규격]",
     `- ${dimensions} 기준의 정사각형 캔버스, nearest-neighbor로 읽히는 또렷한 하드 픽셀`,
     `- ${palette}, 안티앨리어싱·블러·반투명 그림자·서로 다른 크기의 가짜 픽셀 금지`,
-    `- 포즈 레퍼런스 한 장당 같은 순번의 개별 이미지 1장, 총 ${pose?.frames.length || 4}개의 정사각형 프레임 파일로 출력`,
-    "- 하나의 스프라이트시트나 콜라주로 합치지 말고, 모든 프레임에서 캐릭터 크기·얼굴·의상·광원 방향과 발 기준선을 고정",
+    "- 결과는 캐릭터 한 명이 들어간 정사각형 이미지 한 장만 출력하고 스프라이트시트, 여러 포즈, 비교판, 설명문을 만들지 않기",
+    "- 캐릭터를 중앙에 크게 배치하되 머리 위와 발 아래에 충분한 여백을 두고 발 기준선을 수평으로 유지",
     "- 캐릭터 외부에는 소품, 글자, 프레임 번호, UI, 바닥 그림자를 추가하지 않기",
-    "- 배경은 완전한 단색으로 만들고 캐릭터 내부의 같은 색 영역과 섞이지 않게 하기",
+    "- 배경은 무늬·그라디언트·그림자가 전혀 없는 완전한 단색 한 가지로 채우기",
+    "- 배경색은 캐릭터의 외곽선, 몸, 눈, 로고, 의상 어디에도 쓰이지 않는 강한 대비색으로 선택해 캐릭터와 절대 겹치지 않게 하기",
     "",
     "[중요]",
-    "새 캐릭터를 창작하지 말고 원본 마스코트가 같은 캐릭터로 즉시 인식되게 하세요. 개별 파일이지만 모두 하나의 일관된 스프라이트 세트처럼 보여야 합니다.",
-    example?.prompt ? `\n[검증된 예시 프롬프트 메모]\n${example.prompt}` : "",
+    "새 캐릭터나 새 포즈 세트를 창작하지 마세요. 이 한 장은 이후 모든 동작의 정체성 기준이 되는 픽셀 마스터입니다.",
     style?.prompt ? `\n[스타일 세부 규칙]\n${style.prompt}` : "",
-    pose?.prompt ? `\n[동작 세부 규칙]\n${pose.prompt}` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -289,6 +301,7 @@ function FrameSlot({
   index,
   state,
   selected,
+  disabled,
   onSelect,
   onImport,
   onRemove,
@@ -297,6 +310,7 @@ function FrameSlot({
   index: number;
   state: AnimationState;
   selected: boolean;
+  disabled: boolean;
   onSelect: () => void;
   onImport: (files: File[]) => void;
   onRemove: () => void;
@@ -306,14 +320,17 @@ function FrameSlot({
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setDragging(false);
+    if (disabled) return;
     onImport(Array.from(event.dataTransfer.files));
   };
 
   return (
     <div
       className={`frame-slot ${frame ? "has-frame" : ""} ${selected ? "is-selected" : ""} ${dragging ? "is-dragging" : ""}`}
+      data-testid={`frame-slot-${state}-${index}`}
       onDragEnter={(event) => {
         event.preventDefault();
+        if (disabled) return;
         setDragging(true);
       }}
       onDragOver={(event) => event.preventDefault()}
@@ -338,7 +355,7 @@ function FrameSlot({
           </button>
           <div className="frame-slot__actions">
             <label htmlFor={inputId}>교체</label>
-            <button aria-label={`${index + 1}번 프레임 삭제`} onClick={onRemove} type="button">
+            <button aria-label={`${index + 1}번 프레임 삭제`} disabled={disabled} onClick={onRemove} type="button">
               <Icon name="trash" />
             </button>
           </div>
@@ -353,6 +370,7 @@ function FrameSlot({
       <input
         accept="image/png,image/jpeg,image/webp"
         className="visually-hidden"
+        disabled={disabled}
         id={inputId}
         onChange={(event) => {
           onImport(Array.from(event.target.files ?? []));
@@ -439,7 +457,14 @@ function Studio() {
     progress: 0,
     detail: "프레임을 선택하면 로컬 AI가 배경을 분리합니다.",
   });
+  const [quickPet, setQuickPet] = useState<QuickPetState>({
+    phase: "idle",
+    progress: 0,
+    detail: "픽셀 마스코트 한 장만 고르면 나머지는 앱이 준비합니다.",
+  });
   const bulkInputRef = useRef<HTMLInputElement>(null);
+  const quickPetInputRef = useRef<HTMLInputElement>(null);
+  const imageOperationRef = useRef({ busy: false, generation: 0 });
 
   useEffect(() => {
     let mounted = true;
@@ -475,8 +500,8 @@ function Studio() {
   const activeStyle = catalog?.styles.find((item) => item.id === activeStyleId);
   const activePose = catalog?.poses.find((item) => item.id === activePoseId);
   const prompt = useMemo(
-    () => buildPrompt(activeExample, activeStyle, activePose),
-    [activeExample, activePose, activeStyle],
+    () => buildPrompt(activeStyle),
+    [activeStyle],
   );
 
   const project = useMemo<PixelPetProject>(
@@ -528,6 +553,23 @@ function Studio() {
   const notify = (tone: ToastMessage["tone"], message: string) =>
     setToast({ tone, message });
 
+  const beginImageOperation = (action: "quick-pet" | "remove-background"): number | null => {
+    if (imageOperationRef.current.busy || busyAction) return null;
+    imageOperationRef.current.busy = true;
+    imageOperationRef.current.generation += 1;
+    setBusyAction(action);
+    return imageOperationRef.current.generation;
+  };
+
+  const isCurrentImageOperation = (generation: number): boolean =>
+    imageOperationRef.current.busy && imageOperationRef.current.generation === generation;
+
+  const finishImageOperation = (generation: number) => {
+    if (!isCurrentImageOperation(generation)) return;
+    imageOperationRef.current.busy = false;
+    setBusyAction(null);
+  };
+
   const copyPrompt = async () => {
     try {
       await navigator.clipboard.writeText(prompt);
@@ -539,6 +581,10 @@ function Studio() {
 
   const importFiles = async (state: AnimationState, startIndex: number, filesToAdd: File[]) => {
     if (!filesToAdd.length) return;
+    if (busyAction || imageOperationRef.current.busy) {
+      notify("info", "현재 이미지 작업이 끝난 뒤 다시 시도해 주세요.");
+      return;
+    }
     setBusyAction("import");
     try {
       const imported = await Promise.all(filesToAdd.map(createFrameAsset));
@@ -562,6 +608,7 @@ function Studio() {
   };
 
   const removeFrame = (state: AnimationState, index: number) => {
+    if (busyAction || imageOperationRef.current.busy) return;
     setFrames((current) => ({
       ...current,
       [state]: current[state].map((frame, frameIndex) =>
@@ -571,35 +618,132 @@ function Studio() {
     if (selectedFrame?.state === state && selectedFrame.index === index) setSelectedFrame(null);
   };
 
+  const createQuickPet = async (file: File) => {
+    if (!file) return;
+    const operationGeneration = beginImageOperation("quick-pet");
+    if (operationGeneration === null) return;
+    setQuickPet({
+      phase: "reading",
+      progress: 4,
+      detail: "이미지 크기와 투명 배경을 확인하는 중…",
+      fileName: file.name,
+    });
+
+    try {
+      const source = await createFrameAsset(file);
+      const alreadyTransparent = await imageHasMeaningfulTransparency(source.originalDataUrl);
+      let cleanedDataUrl = source.originalDataUrl;
+
+      if (alreadyTransparent) {
+        setQuickPet({
+          phase: "generating",
+          progress: 72,
+          detail: "이미 투명한 이미지라 배경 제거를 건너뛰고 크기를 맞추는 중…",
+          fileName: file.name,
+          backgroundRemoval: "skipped",
+        });
+      } else {
+        setQuickPet({
+          phase: "removing",
+          progress: 10,
+          detail: "로컬 AI가 캐릭터와 배경을 분리하는 중…",
+          fileName: file.name,
+          backgroundRemoval: "performed",
+        });
+        const cleaned = await removeImageBackground(
+          await dataUrlToBlob(source.originalDataUrl),
+          {
+            onProgress: ({ key, ratio }) => {
+              if (!isCurrentImageOperation(operationGeneration)) return;
+              const loadingModel = /model|wasm|onnx/i.test(key);
+              setQuickPet({
+                phase: "removing",
+                progress: Math.min(70, Math.max(10, Math.round(10 + ratio * 60))),
+                detail: loadingModel
+                  ? "앱에 포함된 AI 모델을 여는 중…"
+                  : "캐릭터 가장자리를 투명하게 정리하는 중…",
+                fileName: file.name,
+                backgroundRemoval: "performed",
+              });
+            },
+          },
+        );
+        cleanedDataUrl = await fileToDataUrl(cleaned);
+        setQuickPet({
+          phase: "generating",
+          progress: 76,
+          detail: "캐릭터를 아래 중앙에 맞추고 대기 동작을 만드는 중…",
+          fileName: file.name,
+          backgroundRemoval: "performed",
+        });
+      }
+
+      const targetCanvas = parseCanvasSize(activeStyle?.canvas);
+      const result = await createQuickPetFrames({
+        originalDataUrl: source.originalDataUrl,
+        cleanedDataUrl,
+        sourceName: file.name,
+        canvas: targetCanvas,
+      });
+      if (!isCurrentImageOperation(operationGeneration)) return;
+      setFrames((current) => ({ ...current, idle: result.frames }));
+      setActiveMotion("idle");
+      setSelectedFrame({ state: "idle", index: 0 });
+      setRemoval({
+        phase: "success",
+        progress: 100,
+        detail: result.chromaCleanup.applied
+          ? "단색 배경과 경계색을 제거하고 픽셀용 투명도로 정리했습니다."
+          : alreadyTransparent
+            ? "원본 투명도를 유지해 대기 프레임을 만들었습니다."
+            : "투명 배경 PNG로 정리하고 대기 프레임을 만들었습니다.",
+      });
+      const chromaColor = result.chromaCleanup.key?.color;
+      setQuickPet({
+        phase: "success",
+        progress: 100,
+        detail: `${result.canvas.width} × ${result.canvas.height} 투명 프레임 4개가 준비됐습니다.`,
+        fileName: file.name,
+        backgroundRemoval: alreadyTransparent ? "skipped" : "performed",
+        chromaCleanup: result.chromaCleanup.applied ? "applied" : "not-needed",
+        chromaKey: chromaColor
+          ? `${chromaColor.red},${chromaColor.green},${chromaColor.blue}`
+          : undefined,
+      });
+      notify("success", "이미지 한 장으로 대기 애니메이션을 완성했습니다.");
+    } catch (error) {
+      if (!isCurrentImageOperation(operationGeneration)) return;
+      const message = getErrorMessage(error);
+      setQuickPet({
+        phase: "error",
+        progress: 0,
+        detail: message,
+        fileName: file.name,
+      });
+      notify("error", `자동 완성 실패: ${message}`);
+    } finally {
+      finishImageOperation(operationGeneration);
+    }
+  };
+
   const removeBackground = async () => {
     if (!selectedFrame || !selectedAsset) {
       notify("info", "먼저 배경을 제거할 프레임을 선택해 주세요.");
       return;
     }
 
+    const operationGeneration = beginImageOperation("remove-background");
+    if (operationGeneration === null) return;
+    const targetFrame = { ...selectedFrame };
+    const targetFrameId = selectedAsset.id;
+
     setRemoval({ phase: "loading", progress: 4, detail: "앱에 포함된 AI 모델을 여는 중…" });
     try {
-      type RemovalOptions = {
-        publicPath: string;
-        model: "isnet_quint8";
-        device: "cpu";
-        progress: (key: string, current: number, total: number) => void;
-      };
-      type RemovalFunction = (source: Blob, options: RemovalOptions) => Promise<Blob>;
-      const module = (await import("@imgly/background-removal")) as unknown as {
-        removeBackground?: RemovalFunction;
-        default?: RemovalFunction;
-      };
-      const runRemoval = module.removeBackground ?? module.default;
-      if (!runRemoval) throw new Error("배경 제거 모듈을 시작하지 못했습니다.");
       const source = await dataUrlToBlob(selectedAsset.originalDataUrl);
       setRemoval({ phase: "processing", progress: 12, detail: "캐릭터와 배경을 구분하는 중…" });
-      const result = await runRemoval(source, {
-        publicPath: new URL("./background-removal/", window.location.href).toString(),
-        model: "isnet_quint8",
-        device: "cpu",
-        progress: (key, current, total) => {
-          const ratio = total > 0 ? current / total : 0;
+      const result = await removeImageBackground(source, {
+        onProgress: ({ key, ratio }) => {
+          if (!isCurrentImageOperation(operationGeneration)) return;
           const progress = Math.min(94, Math.max(12, Math.round(12 + ratio * 82)));
           const loadingModel = /model|wasm|onnx/i.test(key);
           setRemoval({
@@ -609,25 +753,52 @@ function Studio() {
           });
         },
       });
-      const dataUrl = await fileToDataUrl(result);
+      const rawDataUrl = await fileToDataUrl(result);
+      const forcedKey = selectedAsset.chromaKey
+        ? {
+            red: selectedAsset.chromaKey[0],
+            green: selectedAsset.chromaKey[1],
+            blue: selectedAsset.chromaKey[2],
+          }
+        : undefined;
+      const processed = await postprocessFlatChromaDataUrl(
+        selectedAsset.originalDataUrl,
+        rawDataUrl,
+        forcedKey,
+      );
+      const dataUrl = processed.dataUrl;
+      const processedKey = processed.chromaCleanup.key?.color;
+      if (!isCurrentImageOperation(operationGeneration)) return;
       setFrames((current) => ({
         ...current,
-        [selectedFrame.state]: current[selectedFrame.state].map((frame, index) =>
-          index === selectedFrame.index && frame
+        [targetFrame.state]: current[targetFrame.state].map((frame, index) =>
+          index === targetFrame.index && frame?.id === targetFrameId
             ? {
                 ...frame,
                 dataUrl,
                 backgroundRemoved: true,
+                chromaKey: processedKey
+                  ? [processedKey.red, processedKey.green, processedKey.blue]
+                  : frame.chromaKey,
                 updatedAt: new Date().toISOString(),
               }
             : frame,
         ),
       }));
-      setRemoval({ phase: "success", progress: 100, detail: "투명 배경 PNG로 정리했습니다." });
+      setRemoval({
+        phase: "success",
+        progress: 100,
+        detail: processed.chromaCleanup.applied
+          ? "단색 배경과 경계색을 제거해 픽셀용 투명도로 정리했습니다."
+          : "투명 배경 PNG로 정리했습니다.",
+      });
       notify("success", "선택한 프레임의 배경을 제거했습니다.");
     } catch (error) {
+      if (!isCurrentImageOperation(operationGeneration)) return;
       setRemoval({ phase: "error", progress: 0, detail: getErrorMessage(error) });
       notify("error", `배경 제거 실패: ${getErrorMessage(error)}`);
+    } finally {
+      finishImageOperation(operationGeneration);
     }
   };
 
@@ -807,7 +978,7 @@ function Studio() {
   return (
     <div className="studio-shell">
       <header className="app-bar">
-        <button className="brand" onClick={() => setStep("guide")} type="button">
+        <button className="brand" disabled={Boolean(busyAction)} onClick={() => setStep("guide")} type="button">
           <span className="brand__mark" aria-hidden="true">
             <i />
             <i />
@@ -823,6 +994,7 @@ function Studio() {
           <span className="status-dot" />
           <input
             aria-label="프로젝트 이름"
+            data-testid="project-name"
             maxLength={48}
             onChange={(event) => setProjectName(event.target.value)}
             value={projectName}
@@ -854,6 +1026,8 @@ function Studio() {
               <button
                 aria-current={active ? "step" : undefined}
                 className={`${active ? "is-active" : ""} ${complete ? "is-complete" : ""}`}
+                data-testid={`workflow-step-${item.id}`}
+                disabled={Boolean(busyAction)}
                 key={item.id}
                 onClick={() => setStep(item.id)}
                 type="button"
@@ -1056,7 +1230,7 @@ function Studio() {
               </div>
               <footer className="pose-panel__footer">
                 <span><i className="status-dot" /> 프레임을 누르면 원본 레퍼런스를 저장할 수 있어요.</span>
-                <span>{activePose?.loop ? "처음과 끝이 자연스럽게 이어지는 루프" : "한 번 재생 후 기본 동작으로 복귀"}</span>
+                <span>고급 동작용 · 프레임별 생성법은 docs/prompting 참고</span>
               </footer>
             </article>
 
@@ -1065,8 +1239,8 @@ function Studio() {
                 <div className="prompt-panel__mark"><Icon name="sparkles" /></div>
                 <div>
                   <span>READY-TO-USE PROMPT</span>
-                  <h2>GPT · Gemini용 생성 프롬프트</h2>
-                  <p>원본 마스코트 → 스타일 → 포즈 이미지 순서로 첨부한 다음 붙여 넣으세요.</p>
+                  <h2>기준 픽셀 마스터 생성 프롬프트</h2>
+                  <p>원본 마스코트 → 스타일 레퍼런스 순서로 두 장만 첨부한 다음 붙여 넣으세요.</p>
                 </div>
                 <button className="button button--primary" onClick={copyPrompt} type="button">
                   <Icon name="copy" /> 프롬프트 복사
@@ -1076,9 +1250,9 @@ function Studio() {
             </article>
 
             <div className="section-footer">
-              <p><Icon name="check" /> AI에서 각 포즈 이미지를 만들었다면 이제 프레임별로 가져오세요.</p>
-              <button className="button button--primary button--large" onClick={() => setStep("frames")} type="button">
-                프레임 가져오기 <Icon name="arrow" />
+              <p><Icon name="check" /> 초보자는 완성된 기준 픽셀 마스터 한 장을 3단계 빠른 자동 완성에 넣으세요. 포즈별 제작은 고급 경로입니다.</p>
+              <button className="button button--primary button--large" onClick={() => setStep("remove")} type="button">
+                한 장으로 빠르게 만들기 <Icon name="arrow" />
               </button>
             </div>
           </section>
@@ -1100,12 +1274,13 @@ function Studio() {
                   <h2>{MOTION_META[activeMotion].label} 프레임</h2>
                   <p>{MOTION_META[activeMotion].description}</p>
                 </div>
-                <button className="button button--soft" disabled={busyAction === "import"} onClick={() => bulkInputRef.current?.click()} type="button">
+                <button className="button button--soft" disabled={Boolean(busyAction)} onClick={() => bulkInputRef.current?.click()} type="button">
                   <Icon name="upload" /> 여러 장 가져오기
                 </button>
                 <input
                   accept="image/png,image/jpeg,image/webp"
                   className="visually-hidden"
+                  disabled={Boolean(busyAction)}
                   multiple
                   onChange={(event: ChangeEvent<HTMLInputElement>) => {
                     const firstEmpty = frames[activeMotion].findIndex((frame) => !frame);
@@ -1123,6 +1298,7 @@ function Studio() {
               <div className="frame-grid">
                 {frames[activeMotion].map((frame, index) => (
                   <FrameSlot
+                    disabled={Boolean(busyAction)}
                     frame={frame}
                     index={index}
                     key={`${activeMotion}-${index}`}
@@ -1136,12 +1312,12 @@ function Studio() {
               </div>
               <div className="frames-panel__tips">
                 <span><Icon name="layers" /> 같은 캔버스 크기와 발 기준선을 유지하면 흔들림이 줄어요.</span>
-                <span>최대 20MB · PNG 권장</span>
+                <span>최대 20MB · 4MP · 한 변 4096px · PNG 권장</span>
               </div>
             </article>
             <div className="section-footer">
               <p>{selectedAsset ? <><Icon name="check" /> {selectedAsset.name} 선택됨</> : <><Icon name="warning" /> 프레임을 선택하면 다음 단계에서 바로 편집할 수 있어요.</>}</p>
-              <button className="button button--primary button--large" disabled={!importedCount} onClick={() => setStep("remove")} type="button">
+              <button className="button button--primary button--large" disabled={Boolean(busyAction) || !importedCount} onClick={() => setStep("remove")} type="button">
                 배경 제거하기 <Icon name="arrow" />
               </button>
             </div>
@@ -1156,6 +1332,100 @@ function Studio() {
               description="브라우저 안에서 동작하는 로컬 AI 모델이 선택한 프레임을 처리합니다. 이미지가 외부 서버로 전송되지 않습니다."
               aside={<span className="privacy-pill"><span className="status-dot" /> ON-DEVICE</span>}
             />
+            <article
+              aria-busy={
+                quickPet.phase === "reading" ||
+                quickPet.phase === "removing" ||
+                quickPet.phase === "generating"
+              }
+              className={`quick-pet-card quick-pet-card--${quickPet.phase}`}
+              data-background-removal={quickPet.backgroundRemoval ?? "pending"}
+              data-chroma-cleanup={quickPet.chromaCleanup ?? "pending"}
+              data-chroma-key={quickPet.chromaKey ?? ""}
+              data-file-name={quickPet.fileName ?? ""}
+              data-phase={quickPet.phase}
+              data-testid="quick-pet-card"
+            >
+              <div className="quick-pet-card__icon"><Icon name="sparkles" /></div>
+              <div className="quick-pet-card__copy">
+                <div className="quick-pet-card__title">
+                  <span>QUICK START · RECOMMENDED</span>
+                  <h2>이미지 한 장으로 자동 완성</h2>
+                  <em>추천</em>
+                </div>
+                <p>
+                  배경을 투명하게 만들고 {activeStyle?.canvas ?? "64 × 64"} 크기로 맞춘 뒤,
+                  가볍게 숨 쉬는 대기 프레임 4개를 자동으로 만듭니다.
+                </p>
+                <small>기존 대기 프레임은 교체되며 걷기·점프 등 다른 동작은 그대로 유지됩니다.</small>
+              </div>
+              <div className="quick-pet-card__action">
+                <button
+                  className="button button--primary"
+                  data-testid="quick-pet-choose"
+                  disabled={Boolean(busyAction)}
+                  onClick={() => quickPetInputRef.current?.click()}
+                  type="button"
+                >
+                  <Icon name="upload" /> {quickPet.phase === "success" ? "다른 이미지로 다시 만들기" : "이미지 한 장 고르기"}
+                </button>
+                <input
+                  accept="image/png,image/jpeg,image/webp"
+                  className="visually-hidden"
+                  data-testid="quick-pet-file-input"
+                  disabled={Boolean(busyAction)}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void createQuickPet(file);
+                    event.target.value = "";
+                  }}
+                  ref={quickPetInputRef}
+                  type="file"
+                />
+                <span>{quickPet.fileName ?? "PNG · JPG · WebP / 최대 20MB · 4MP · 한 변 4096px"}</span>
+              </div>
+              <div
+                aria-live="polite"
+                className="quick-pet-card__progress"
+                data-testid="quick-pet-progress"
+              >
+                <div>
+                  <strong data-testid="quick-pet-status">
+                    {quickPet.phase === "success"
+                      ? "자동 완성됨"
+                      : quickPet.phase === "error"
+                        ? "다시 확인해 주세요"
+                        : quickPet.phase === "idle"
+                          ? "시작할 준비가 됐어요"
+                          : "자동으로 만드는 중"}
+                  </strong>
+                  <span>{quickPet.detail}</span>
+                  <b>{quickPet.progress}%</b>
+                </div>
+                <span
+                  aria-label="자동 완성 진행률"
+                  aria-valuemax={100}
+                  aria-valuemin={0}
+                  aria-valuenow={quickPet.progress}
+                  className="progress-track"
+                  role="progressbar"
+                >
+                  <i style={{ width: `${quickPet.progress}%` }} />
+                </span>
+              </div>
+              {quickPet.phase === "success" && (
+                <div className="quick-pet-card__frames" data-testid="quick-pet-result">
+                  {frames.idle.slice(0, 4).map((frame, index) =>
+                    frame ? (
+                      <span className="checkerboard" data-testid={`quick-pet-frame-${index}`} key={frame.id}>
+                        <img alt={`자동 생성 대기 프레임 ${index + 1}`} src={frame.dataUrl} />
+                      </span>
+                    ) : null,
+                  )}
+                </div>
+              )}
+            </article>
+            <div className="quick-pet-divider"><span>또는 프레임별로 직접 다듬기</span></div>
             <div className="remove-layout">
               <aside className="panel frame-browser">
                 <div className="panel__heading">
@@ -1179,7 +1449,7 @@ function Studio() {
                             <button
                               aria-label={`${MOTION_META[state].label} ${index + 1}번 프레임`}
                               className={`checkerboard ${selectedFrame?.state === state && selectedFrame.index === index ? "is-active" : ""}`}
-                              disabled={removal.phase === "loading" || removal.phase === "processing"}
+                              disabled={Boolean(busyAction) || removal.phase === "loading" || removal.phase === "processing"}
                               key={frame.id}
                               onClick={() => {
                                 setSelectedFrame({ state, index });
@@ -1238,15 +1508,15 @@ function Studio() {
                   <span className="progress-track"><i style={{ width: `${removal.progress}%` }} /></span>
                   <div className="removal-console__actions">
                     <p><span className="status-dot" /> 첫 실행에는 앱에 포함된 모델을 메모리에 올려 잠시 걸릴 수 있어요.</p>
-                    <button className="button button--ghost" disabled={!selectedAsset?.backgroundRemoved || removal.phase === "processing"} onClick={restoreBackground} type="button"><Icon name="refresh" /> 원본 복원</button>
-                    <button className="button button--primary" disabled={!selectedAsset || removal.phase === "loading" || removal.phase === "processing"} onClick={() => void removeBackground()} type="button"><Icon name="cut" /> {selectedAsset?.backgroundRemoved ? "다시 제거" : "배경 제거"}</button>
+                    <button className="button button--ghost" disabled={Boolean(busyAction) || !selectedAsset?.backgroundRemoved || removal.phase === "processing"} onClick={restoreBackground} type="button"><Icon name="refresh" /> 원본 복원</button>
+                    <button className="button button--primary" data-testid="manual-remove-background" disabled={Boolean(busyAction) || !selectedAsset || removal.phase === "loading" || removal.phase === "processing"} onClick={() => void removeBackground()} type="button"><Icon name="cut" /> {selectedAsset?.backgroundRemoved ? "다시 제거" : "배경 제거"}</button>
                   </div>
                 </div>
               </article>
             </div>
             <div className="section-footer">
               <p><Icon name="check" /> 투명화하지 않은 프레임도 미리보기에서 함께 확인할 수 있어요.</p>
-              <button className="button button--primary button--large" disabled={!importedCount} onClick={() => setStep("preview")} type="button">
+              <button className="button button--primary button--large" disabled={Boolean(busyAction) || !importedCount} onClick={() => setStep("preview")} type="button">
                 움직임 확인하기 <Icon name="arrow" />
               </button>
             </div>
@@ -1268,7 +1538,7 @@ function Studio() {
                   <span><i className="status-dot" /> LIVE PREVIEW</span>
                   <small>{MOTION_META[activeMotion].shortLabel} · {activePreviewFrames.length} FRAMES</small>
                 </div>
-                <div className={`preview-stage checkerboard preview-motion--${activeMotion}`}>
+                <div className={`preview-stage checkerboard preview-motion--${activeMotion}`} data-testid="animation-preview">
                   {activePreviewFrames.length ? (
                     <img
                       alt={`${MOTION_META[activeMotion].label} 애니메이션 미리보기`}
@@ -1379,12 +1649,12 @@ function Studio() {
               <article className="panel publish-card">
                 <span className="publish-card__icon publish-card__icon--violet"><Icon name="layers" /></span>
                 <div><span>USE ANYWHERE</span><h2>스프라이트시트 PNG</h2><p>동작을 행별로 정렬한 투명 PNG를 게임 엔진이나 웹 프로젝트에서 사용하세요.</p></div>
-                <footer><button className="button button--soft" disabled={!importedCount || Boolean(busyAction)} onClick={exportSpriteSheet} type="button"><Icon name="download" /> PNG 내보내기</button></footer>
+                <footer><button className="button button--soft" data-testid="export-spritesheet" disabled={!importedCount || Boolean(busyAction)} onClick={exportSpriteSheet} type="button"><Icon name="download" /> PNG 내보내기</button></footer>
               </article>
               <article className="panel publish-card">
                 <span className="publish-card__icon publish-card__icon--cyan"><Icon name="download" /></span>
                 <div><span>PORTABLE DATA</span><h2>프로젝트 JSON</h2><p>프레임 데이터가 포함된 이식 가능한 JSON으로 백업하거나 다른 도구와 연결하세요.</p></div>
-                <footer><button className="button button--soft" disabled={!importedCount || Boolean(busyAction)} onClick={exportProject} type="button"><Icon name="download" /> JSON 내보내기</button></footer>
+                <footer><button className="button button--soft" data-testid="export-project-json" disabled={!importedCount || Boolean(busyAction)} onClick={exportProject} type="button"><Icon name="download" /> JSON 내보내기</button></footer>
               </article>
             </div>
 

@@ -1,0 +1,160 @@
+{
+  "schemaVersion": "1.0.0",
+  "sampleId": "toto-sprout-turtle",
+  "public": true,
+  "startedAt": "2026-07-15T14:48:23.812Z",
+  "completedAt": "2026-07-15T14:48:34.139Z",
+  "source": {
+    "path": "examples/beginner-pets/toto-sprout-turtle/pixel-master-chroma.png",
+    "sha256": "8844205dc46cec7406bba9e06498da56c6d20a80e375ed7bc5f7c6439ef81610",
+    "bytes": 1087747
+  },
+  "pipeline": {
+    "app": "PixelPet Studio",
+    "appVersion": "0.1.0",
+    "mode": "hidden-electron-browser-mode",
+    "entryPoint": "Step 3 / quick-pet UI",
+    "imageProcessing": "PixelPet quick UI only; no external image post-processing",
+    "backgroundRemoval": "performed",
+    "backgroundRemovalModel": "IMG.LY isnet_quint8 / CPU",
+    "flatChromaPostprocess": {
+      "applied": true,
+      "keyRgb": [
+        249,
+        4,
+        239
+      ],
+      "operations": [
+        "key-distance matte",
+        "despill",
+        "pixel hard-alpha"
+      ]
+    },
+    "fit": "cleaned alpha bbox / bottom-center / nearest-neighbor",
+    "idlePreset": [
+      "neutral",
+      "inhale-up",
+      "soft-squash",
+      "exhale"
+    ],
+    "canvas": {
+      "width": 64,
+      "height": 64
+    },
+    "frameDiagnostics": [
+      {
+        "width": 64,
+        "height": 64,
+        "opaquePixels": 1192,
+        "softAlphaPixels": 0,
+        "chromaFringePixels": 0,
+        "alphaBounds": {
+          "x": 16,
+          "y": 5,
+          "width": 32,
+          "height": 54
+        },
+        "largestEnclosedTransparentRegion": 0
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "opaquePixels": 1192,
+        "softAlphaPixels": 0,
+        "chromaFringePixels": 0,
+        "alphaBounds": {
+          "x": 16,
+          "y": 4,
+          "width": 32,
+          "height": 54
+        },
+        "largestEnclosedTransparentRegion": 0
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "opaquePixels": 1148,
+        "softAlphaPixels": 0,
+        "chromaFringePixels": 0,
+        "alphaBounds": {
+          "x": 16,
+          "y": 7,
+          "width": 33,
+          "height": 52
+        },
+        "largestEnclosedTransparentRegion": 0
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "opaquePixels": 1166,
+        "softAlphaPixels": 0,
+        "chromaFringePixels": 0,
+        "alphaBounds": {
+          "x": 16,
+          "y": 6,
+          "width": 32,
+          "height": 53
+        },
+        "largestEnclosedTransparentRegion": 0
+      }
+    ],
+    "fps": 8,
+    "scale": 3
+  },
+  "appExports": {
+    "project": "examples/beginner-pets/toto-sprout-turtle/toto-sprout-turtle.pixelpet",
+    "spriteSheet": "examples/beginner-pets/toto-sprout-turtle/toto-sprout-turtle-spritesheet.png",
+    "projectExportButton": "export-project-json",
+    "spriteSheetExportButton": "export-spritesheet",
+    "downloadTransport": "Electron will-download"
+  },
+  "generatedFrames": [
+    "examples/beginner-pets/toto-sprout-turtle/generated/idle-01.png",
+    "examples/beginner-pets/toto-sprout-turtle/generated/idle-02.png",
+    "examples/beginner-pets/toto-sprout-turtle/generated/idle-03.png",
+    "examples/beginner-pets/toto-sprout-turtle/generated/idle-04.png"
+  ],
+  "preview": "examples/beginner-pets/toto-sprout-turtle/app-preview.png",
+  "desktopPetVerification": {
+    "status": "running",
+    "animation": "idle",
+    "size": {
+      "width": 192,
+      "height": 192
+    },
+    "position": {
+      "x": 1504,
+      "y": 828
+    },
+    "windowVisible": true,
+    "alwaysOnTop": true,
+    "capture": {
+      "width": 384,
+      "height": 384
+    },
+    "nonTransparentPixels": 42912,
+    "captureSha256": "8bc58048a2d81655a89a3e194eb77387d1937d2be922e35be37d64cb3702ce88",
+    "verificationPath": "exported project -> WindowManager.startPet -> visible pet capture"
+  },
+  "reproducibility": {
+    "deterministic": false,
+    "reason": "Frame UUIDs, timestamps, and animated preview capture vary between runs.",
+    "stableInputs": "Source SHA-256, app version, pipeline settings, and every completed output hash are recorded.",
+    "runtime": {
+      "node": "24.18.0",
+      "electron": "43.1.1",
+      "chrome": "150.0.7871.114"
+    }
+  },
+  "outputSha256": {
+    "examples/beginner-pets/toto-sprout-turtle/toto-sprout-turtle.pixelpet": "2d5555e35649d7d531f139e783a6c3189a8f8cca25a7671f7d8b520fd0531ea2",
+    "examples/beginner-pets/toto-sprout-turtle/toto-sprout-turtle-spritesheet.png": "f00573276e14856cdab81cda1c3963a2472333eed0fbc9e9c1d1f5e05bf264c2",
+    "examples/beginner-pets/toto-sprout-turtle/generated/idle-01.png": "8ad97f4043d00c3816229f9d6c4e4cdcac8315dce0d78a4dce7bdacc1ee05bf8",
+    "examples/beginner-pets/toto-sprout-turtle/generated/idle-02.png": "da72fa4e5471890d164002dba5942a47f84b518a3ee6da1870cdbe9bfeb704e0",
+    "examples/beginner-pets/toto-sprout-turtle/generated/idle-03.png": "a8b9ff81c06bf9d83d65d9c0a51853e70bf6d643c191710494c3a75ffea2c94a",
+    "examples/beginner-pets/toto-sprout-turtle/generated/idle-04.png": "898f56e83431d5dee8d6519076941088fd2155e565a3970d063e5f65d08fb860",
+    "examples/beginner-pets/toto-sprout-turtle/app-preview.png": "ebe22e8609bc9b9e78e08eb199a5401a65e7ffd5e3f6be6e4859377d514c403d"
+  },
+  "rightsBoundary": "Original public sample assets created for this repository."
+}

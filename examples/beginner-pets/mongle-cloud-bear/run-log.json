@@ -1,0 +1,160 @@
+{
+  "schemaVersion": "1.0.0",
+  "sampleId": "mongle-cloud-bear",
+  "public": true,
+  "startedAt": "2026-07-15T14:48:13.780Z",
+  "completedAt": "2026-07-15T14:48:23.802Z",
+  "source": {
+    "path": "examples/beginner-pets/mongle-cloud-bear/pixel-master-chroma.png",
+    "sha256": "f2c648ac804c6b016fa1003fefa33dd539e64357d0bc1c2732a807b8d1b4ff04",
+    "bytes": 1091786
+  },
+  "pipeline": {
+    "app": "PixelPet Studio",
+    "appVersion": "0.1.0",
+    "mode": "hidden-electron-browser-mode",
+    "entryPoint": "Step 3 / quick-pet UI",
+    "imageProcessing": "PixelPet quick UI only; no external image post-processing",
+    "backgroundRemoval": "performed",
+    "backgroundRemovalModel": "IMG.LY isnet_quint8 / CPU",
+    "flatChromaPostprocess": {
+      "applied": true,
+      "keyRgb": [
+        248,
+        5,
+        231
+      ],
+      "operations": [
+        "key-distance matte",
+        "despill",
+        "pixel hard-alpha"
+      ]
+    },
+    "fit": "cleaned alpha bbox / bottom-center / nearest-neighbor",
+    "idlePreset": [
+      "neutral",
+      "inhale-up",
+      "soft-squash",
+      "exhale"
+    ],
+    "canvas": {
+      "width": 64,
+      "height": 64
+    },
+    "frameDiagnostics": [
+      {
+        "width": 64,
+        "height": 64,
+        "opaquePixels": 1544,
+        "softAlphaPixels": 0,
+        "chromaFringePixels": 0,
+        "alphaBounds": {
+          "x": 14,
+          "y": 5,
+          "width": 36,
+          "height": 54
+        },
+        "largestEnclosedTransparentRegion": 0
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "opaquePixels": 1544,
+        "softAlphaPixels": 0,
+        "chromaFringePixels": 0,
+        "alphaBounds": {
+          "x": 14,
+          "y": 4,
+          "width": 36,
+          "height": 54
+        },
+        "largestEnclosedTransparentRegion": 0
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "opaquePixels": 1525,
+        "softAlphaPixels": 0,
+        "chromaFringePixels": 0,
+        "alphaBounds": {
+          "x": 13,
+          "y": 7,
+          "width": 38,
+          "height": 52
+        },
+        "largestEnclosedTransparentRegion": 0
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "opaquePixels": 1516,
+        "softAlphaPixels": 0,
+        "chromaFringePixels": 0,
+        "alphaBounds": {
+          "x": 14,
+          "y": 6,
+          "width": 36,
+          "height": 53
+        },
+        "largestEnclosedTransparentRegion": 0
+      }
+    ],
+    "fps": 8,
+    "scale": 3
+  },
+  "appExports": {
+    "project": "examples/beginner-pets/mongle-cloud-bear/mongle-cloud-bear.pixelpet",
+    "spriteSheet": "examples/beginner-pets/mongle-cloud-bear/mongle-cloud-bear-spritesheet.png",
+    "projectExportButton": "export-project-json",
+    "spriteSheetExportButton": "export-spritesheet",
+    "downloadTransport": "Electron will-download"
+  },
+  "generatedFrames": [
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-01.png",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-02.png",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-03.png",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-04.png"
+  ],
+  "preview": "examples/beginner-pets/mongle-cloud-bear/app-preview.png",
+  "desktopPetVerification": {
+    "status": "running",
+    "animation": "idle",
+    "size": {
+      "width": 192,
+      "height": 192
+    },
+    "position": {
+      "x": 1504,
+      "y": 828
+    },
+    "windowVisible": true,
+    "alwaysOnTop": true,
+    "capture": {
+      "width": 384,
+      "height": 384
+    },
+    "nonTransparentPixels": 55584,
+    "captureSha256": "99d806dfca43d1969acb24ffbabefac2bd81050f93e7f61caa434f64b1071510",
+    "verificationPath": "exported project -> WindowManager.startPet -> visible pet capture"
+  },
+  "reproducibility": {
+    "deterministic": false,
+    "reason": "Frame UUIDs, timestamps, and animated preview capture vary between runs.",
+    "stableInputs": "Source SHA-256, app version, pipeline settings, and every completed output hash are recorded.",
+    "runtime": {
+      "node": "24.18.0",
+      "electron": "43.1.1",
+      "chrome": "150.0.7871.114"
+    }
+  },
+  "outputSha256": {
+    "examples/beginner-pets/mongle-cloud-bear/mongle-cloud-bear.pixelpet": "574f5fe05ea314f524f6b1543634c275c9e4c78850cd9eb1ffa99fa9aa4245a6",
+    "examples/beginner-pets/mongle-cloud-bear/mongle-cloud-bear-spritesheet.png": "e2627ea8ec49a9930fa20b11c0dfaa7b6e64c779c8aa542e581a6f72d24a4ad2",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-01.png": "3f9c3efafe1fb40fc9f3b21806be323fb5d6cbaf8e517d0ad6a57ae8a37747f7",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-02.png": "87e8d88174524f2c382656ed8578585db319cd4ed52072cee4122ec931accd4e",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-03.png": "2effe4671d2b6e7d4dd0c5720f579326eb0b4fceb7264a277a1e02f113b7a81e",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-04.png": "28002b4393e6bedd4f2140a0b5d46ae66a5b208f8c0b2b0cdb24008c26dfb936",
+    "examples/beginner-pets/mongle-cloud-bear/app-preview.png": "cd8c40c8a436ba8fe86ee4f2f6614251b77a8cd62f6f0114245a94ec0d32391c"
+  },
+  "rightsBoundary": "Original public sample assets created for this repository."
+}
