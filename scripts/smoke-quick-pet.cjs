@@ -7,6 +7,13 @@ const {
   rendererEntryUrl,
 } = require("../dist-electron/main/app-protocol.js");
 
+// GitHub's ephemeral Linux runner cannot grant Electron's downloaded helper
+// the root-owned SUID sandbox bit. Keep the exception explicit and CI-only;
+// normal app and local smoke runs retain Electron's sandbox.
+if (process.platform === "linux" && process.env.PIXELPET_SMOKE_NO_SANDBOX === "1") {
+  app.commandLine.appendSwitch("no-sandbox");
+}
+
 app.setAppPath(path.resolve(__dirname, ".."));
 registerAppScheme();
 

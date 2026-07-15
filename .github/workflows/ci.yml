@@ -21,3 +21,5 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: xvfb-run --auto-servernum npm run smoke:quick-pet
+        env:
+          PIXELPET_SMOKE_NO_SANDBOX: "1"
