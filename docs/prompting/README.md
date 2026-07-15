@@ -11,6 +11,20 @@ PixelPet의 생성 단계는 한 번에 전체 스프라이트 시트를 요구�
 
 앱이나 스크립트가 템플릿을 탐색할 때는 [`templates/catalog.json`](templates/catalog.json)을 사용한다. 특정 모델 버전이나 비공개 옵션을 가정하지 않으며, 이미지 레퍼런스를 받을 수 있는 해당 제공자의 UI 또는 API에 그대로 적용하는 일반 템플릿이다.
 
+## 바로 쓰는 560개 프롬프트
+
+[`generated`](generated/README.md)에는 5개 예시 펫 각각을 28개 포즈 프레임으로 만드는 GPT/Gemini 한국어·영어 프롬프트 **560개**가 완전히 치환된 상태로 들어 있다.
+
+```text
+5 pets × 28 pose frames × 2 providers × 2 languages = 560 prompts
+```
+
+- [`generated/index.json`](generated/index.json): provider, language, pet, style, action, frame, 첨부할 레퍼런스 경로와 완성 프롬프트를 가진 기계 판독용 전체 카탈로그
+- [`generated/gpt.ko.md`](generated/gpt.ko.md), [`generated/gpt.en.md`](generated/gpt.en.md): GPT용 사람 판독 카탈로그
+- [`generated/gemini.ko.md`](generated/gemini.ko.md), [`generated/gemini.en.md`](generated/gemini.en.md): Gemini용 사람 판독 카탈로그
+
+이 파일들은 템플릿과 `reference-kits` 매니페스트에서 생성한다. 원본을 바꿨다면 `npm run prompts:generate`로 갱신하고 `npm run prompts:check`로 동기화 상태를 검사한다.
+
 ## 2단계 생성 계약
 
 ### A. 기준 픽셀 마스터

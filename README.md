@@ -9,6 +9,7 @@
 
   [![CI](https://github.com/obundh/pixel-pet-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/obundh/pixel-pet-studio/actions/workflows/ci.yml)
   [![Desktop builds](https://github.com/obundh/pixel-pet-studio/actions/workflows/build-desktop.yml/badge.svg)](https://github.com/obundh/pixel-pet-studio/actions/workflows/build-desktop.yml)
+  [![Download v0.1.0](https://img.shields.io/badge/download-v0.1.0-8DD7BF)](https://github.com/obundh/pixel-pet-studio/releases/latest)
   ![Electron](https://img.shields.io/badge/Electron-Windows%20%7C%20macOS-9FEAF9?logo=electron&logoColor=111)
 </div>
 
@@ -35,13 +36,13 @@ PixelPet Studio는 역할을 명확히 나눕니다.
 - 캐릭터 정체성이 섞이지 않는 오리지널 픽셀 스타일 5종
 - `idle`, `walk`, `jump`, `sleep`, `reaction` 포즈 레퍼런스 28장
 - 서로 다른 실루엣을 가진 오리지널 예시 펫 5종과 변환 결과
-- GPT·Gemini용 한국어/영어 2단계 프롬프트 템플릿
+- GPT·Gemini용 한국어/영어 2단계 템플릿과 즉시 실행 가능한 프레임 프롬프트 560개
 - 4/8/6/4/6 프레임 드래그 앤 드롭 슬롯
 - IMG.LY IS-Net quantized 모델을 앱에 포함한 온디바이스 배경 제거
 - nearest-neighbor 애니메이션 미리보기와 PNG 스프라이트시트 출력
 - 단일 파일 `.pixelpet` 프로젝트 저장/불러오기
 - 투명·always-on-top 데스크톱 펫 창, 자동 이동·방향 전환·클릭 반응
-- macOS DMG/ZIP, Windows NSIS/portable EXE 자동 빌드
+- macOS Apple Silicon/Intel DMG·ZIP, Windows x64 Setup·Portable EXE 자동 빌드
 
 ## 5가지 예시 펫
 
@@ -60,7 +61,7 @@ PixelPet Studio는 역할을 명확히 나눕니다.
 4. 생성 이미지를 동작별 슬롯에 넣고 **배경 제거**를 실행합니다. 이미지 처리는 기기 안에서 수행됩니다.
 5. 속도와 크기를 확인한 뒤 데스크톱 펫으로 실행하거나 `.pixelpet`/JSON/PNG 스프라이트시트로 저장합니다.
 
-프롬프트는 한 번에 스프라이트시트 전체를 요구하지 않습니다. 먼저 기준 픽셀 마스터를 확정하고, 그 이미지를 가장 강한 캐릭터 레퍼런스로 사용해 프레임을 **한 장씩** 만드는 방식입니다. 상세 변수와 제공자별 템플릿은 [`docs/prompting`](docs/prompting/README.md)을 참고하세요.
+프롬프트는 한 번에 스프라이트시트 전체를 요구하지 않습니다. 먼저 기준 픽셀 마스터를 확정하고, 그 이미지를 가장 강한 캐릭터 레퍼런스로 사용해 프레임을 **한 장씩** 만드는 방식입니다. 상세 변수와 제공자별 템플릿은 [`docs/prompting`](docs/prompting/README.md), 5개 펫 × 28개 포즈 × 2개 제공자 × 2개 언어로 완성된 **560개 프롬프트**는 [`docs/prompting/generated`](docs/prompting/generated/README.md)에서 볼 수 있습니다.
 
 ## 로컬 실행
 
@@ -77,11 +78,11 @@ npm run dev
 npm test          # 프로젝트 계약 + 43개 이미지/알파/참조 연결 검사
 npm run typecheck
 npm run build     # renderer + Electron main/preload
-npm run dist:mac  # DMG + ZIP
+npm run dist:mac  # Apple Silicon/Intel DMG + ZIP (macOS에서 실행)
 npm run dist:win  # NSIS installer + portable EXE (Windows에서 실행)
 ```
 
-GitHub Actions의 **Build desktop apps** 워크플로를 수동 실행하거나 `v*` 태그를 푸시하면 macOS와 Windows 설치 파일을 각각 artifact로 받을 수 있습니다. 코드 서명 인증서는 포함하지 않았으므로 공개 배포 전 Apple/Windows 서명을 추가하세요.
+바로 실행할 파일은 [GitHub Releases](https://github.com/obundh/pixel-pet-studio/releases/latest)에서 받을 수 있습니다. GitHub Actions의 **Build desktop apps** 워크플로를 수동 실행하거나 `v*` 태그를 푸시해도 macOS와 Windows 패키지를 artifact로 받을 수 있습니다. 코드 서명 인증서는 포함하지 않았으므로 운영체제 경고를 확인해야 하며, 공개 운영 배포 전 Apple/Windows 서명을 추가하세요.
 
 ## 프로젝트 구조
 
@@ -92,7 +93,7 @@ src/
 ├── renderer/      React 제작 워크플로와 펫 렌더러
 └── shared/        .pixelpet 문서 및 IPC 계약
 reference-kits/    43개 레퍼런스 자산과 재현 프롬프트
-docs/prompting/    GPT/Gemini 한·영 템플릿
+docs/prompting/    GPT/Gemini 한·영 템플릿과 완전 치환 프롬프트 560개
 scripts/           에셋 생성·검증·로컬 모델 준비
 .github/workflows Windows/macOS CI와 패키징
 ```
