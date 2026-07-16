@@ -87,6 +87,23 @@ describe("PixelPet project image trust boundary", () => {
     ).not.toThrow();
   });
 
+  it("accepts complete per-motion FPS values and rejects an invalid motion rate", () => {
+    const project = projectWithFrame();
+    project.motionFps = {
+      idle: 4,
+      walk: 8,
+      jump: 8,
+      sleep: 4,
+      reaction: 8,
+    };
+    expect(() => assertPixelPetProject(project)).not.toThrow();
+
+    project.motionFps.reaction = 0;
+    expect(() => assertPixelPetProject(project)).toThrow(
+      "PixelPet reaction FPS must be between 0 and 60",
+    );
+  });
+
   it("rejects remote and unsupported frame sources", () => {
     expect(() =>
       assertPixelPetProject(projectWithFrame({ dataUrl: "https://example.test/tracker.png" })),

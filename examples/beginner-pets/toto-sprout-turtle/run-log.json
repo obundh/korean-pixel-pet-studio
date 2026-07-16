@@ -1,41 +1,69 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "2.0.0",
   "sampleId": "toto-sprout-turtle",
   "public": true,
-  "startedAt": "2026-07-15T14:48:23.812Z",
-  "completedAt": "2026-07-15T14:48:34.139Z",
+  "startedAt": "2026-07-16T12:53:38.667Z",
+  "completedAt": "2026-07-16T12:53:41.817Z",
   "source": {
-    "path": "examples/beginner-pets/toto-sprout-turtle/pixel-master-chroma.png",
-    "sha256": "8844205dc46cec7406bba9e06498da56c6d20a80e375ed7bc5f7c6439ef81610",
-    "bytes": 1087747
+    "path": "examples/beginner-pets/toto-sprout-turtle/ai-idle-sheet-chroma.png",
+    "sha256": "c8cbbad98917f366c2068ea972fe0500c184b0a5714999692904c3ee392d9ebc",
+    "bytes": 1444297,
+    "sheet": {
+      "width": 2172,
+      "height": 724,
+      "layout": "one horizontal row / four equal cells / left-to-right",
+      "cellWidth": 543,
+      "cellHeight": 724
+    }
   },
   "pipeline": {
     "app": "PixelPet Studio",
-    "appVersion": "0.1.0",
+    "appVersion": "0.2.0",
     "mode": "hidden-electron-browser-mode",
-    "entryPoint": "Step 3 / quick-pet UI",
-    "imageProcessing": "PixelPet quick UI only; no external image post-processing",
-    "backgroundRemoval": "performed",
-    "backgroundRemovalModel": "IMG.LY isnet_quint8 / CPU",
+    "entryPoint": "Step 2 / pose-sheet import and shared motion-frame processing",
+    "imageProcessing": "PixelPet Studio UI only after image generation; browser-canvas equal split, flat-chroma cleanup, shared alignment, export",
+    "sourceFrameSizes": [
+      {
+        "width": 543,
+        "height": 724
+      },
+      {
+        "width": 543,
+        "height": 724
+      },
+      {
+        "width": 543,
+        "height": 724
+      },
+      {
+        "width": 543,
+        "height": 724
+      }
+    ],
+    "backgroundRemoval": "flat-chroma-direct",
+    "backgroundRemovalModel": "not used for the uniform prompt background",
     "flatChromaPostprocess": {
       "applied": true,
       "keyRgb": [
-        249,
-        4,
-        239
+        237,
+        6,
+        226
       ],
       "operations": [
         "key-distance matte",
         "despill",
+        "HSV hue and chroma-direction residue detection",
+        "exterior-boundary nearest-foreground color repair",
+        "source and final-canvas fringe pass",
         "pixel hard-alpha"
       ]
     },
-    "fit": "cleaned alpha bbox / bottom-center / nearest-neighbor",
+    "fit": "robust body-row anchor stabilization with capped correction / shared union alpha bounds / one common scale and placement / nearest-neighbor",
     "idlePreset": [
-      "neutral",
-      "inhale-up",
-      "soft-squash",
-      "exhale"
+      "AI-authored neutral",
+      "AI-authored inhale",
+      "AI-authored local-part transition",
+      "AI-authored exhale"
     ],
     "canvas": {
       "width": 64,
@@ -43,64 +71,155 @@
     },
     "frameDiagnostics": [
       {
+        "label": "toto-sprout-turtle#idle-1",
         "width": 64,
         "height": 64,
-        "opaquePixels": 1192,
+        "foregroundPixels": 1170,
+        "opaquePixels": 1170,
         "softAlphaPixels": 0,
+        "boundaryPixels": 216,
         "chromaFringePixels": 0,
+        "chromaFringeLocations": [],
         "alphaBounds": {
-          "x": 16,
+          "x": 17,
+          "y": 5,
+          "width": 31,
+          "height": 54
+        },
+        "centroid": {
+          "x": 32.1188,
+          "y": 34.4966
+        },
+        "baselineY": 58
+      },
+      {
+        "label": "toto-sprout-turtle#idle-2",
+        "width": 64,
+        "height": 64,
+        "foregroundPixels": 1174,
+        "opaquePixels": 1174,
+        "softAlphaPixels": 0,
+        "boundaryPixels": 225,
+        "chromaFringePixels": 0,
+        "chromaFringeLocations": [],
+        "alphaBounds": {
+          "x": 17,
           "y": 5,
           "width": 32,
           "height": 54
         },
-        "largestEnclosedTransparentRegion": 0
-      },
-      {
-        "width": 64,
-        "height": 64,
-        "opaquePixels": 1192,
-        "softAlphaPixels": 0,
-        "chromaFringePixels": 0,
-        "alphaBounds": {
-          "x": 16,
-          "y": 4,
-          "width": 32,
-          "height": 54
+        "centroid": {
+          "x": 32.333,
+          "y": 34.1329
         },
-        "largestEnclosedTransparentRegion": 0
+        "baselineY": 58
       },
       {
+        "label": "toto-sprout-turtle#idle-3",
         "width": 64,
         "height": 64,
-        "opaquePixels": 1148,
+        "foregroundPixels": 1173,
+        "opaquePixels": 1173,
         "softAlphaPixels": 0,
+        "boundaryPixels": 218,
         "chromaFringePixels": 0,
+        "chromaFringeLocations": [],
         "alphaBounds": {
-          "x": 16,
+          "x": 15,
           "y": 7,
-          "width": 33,
+          "width": 34,
           "height": 52
         },
-        "largestEnclosedTransparentRegion": 0
+        "centroid": {
+          "x": 32.2204,
+          "y": 34.9288
+        },
+        "baselineY": 58
       },
       {
+        "label": "toto-sprout-turtle#idle-4",
         "width": 64,
         "height": 64,
-        "opaquePixels": 1166,
+        "foregroundPixels": 1170,
+        "opaquePixels": 1170,
         "softAlphaPixels": 0,
+        "boundaryPixels": 216,
         "chromaFringePixels": 0,
+        "chromaFringeLocations": [],
         "alphaBounds": {
-          "x": 16,
-          "y": 6,
-          "width": 32,
-          "height": 53
+          "x": 17,
+          "y": 5,
+          "width": 31,
+          "height": 54
         },
-        "largestEnclosedTransparentRegion": 0
+        "centroid": {
+          "x": 32.1188,
+          "y": 34.4966
+        },
+        "baselineY": 58
       }
     ],
-    "fps": 8,
+    "transitions": [
+      {
+        "from": 0,
+        "to": 1,
+        "centroidDistance": 0.4221,
+        "centroidJumpRatio": 0.0066,
+        "baselineDistance": 0,
+        "baselineJumpRatio": 0
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "centroidDistance": 0.8038,
+        "centroidJumpRatio": 0.0126,
+        "baselineDistance": 0,
+        "baselineJumpRatio": 0
+      },
+      {
+        "from": 2,
+        "to": 3,
+        "centroidDistance": 0.444,
+        "centroidJumpRatio": 0.0069,
+        "baselineDistance": 0,
+        "baselineJumpRatio": 0
+      },
+      {
+        "from": 3,
+        "to": 0,
+        "centroidDistance": 0,
+        "centroidJumpRatio": 0,
+        "baselineDistance": 0,
+        "baselineJumpRatio": 0
+      }
+    ],
+    "processingDetail": "공통 좌표 정리 완료 · 4장을 64 × 64 공통 좌표로 정렬했습니다. 단색 배경 4장 직접 정리",
+    "fps": 4,
+    "motionFps": {
+      "idle": 4,
+      "walk": 8,
+      "jump": 8,
+      "sleep": 4,
+      "reaction": 8
+    },
     "scale": 3
+  },
+  "qualityGate": {
+    "passed": true,
+    "thresholds": {
+      "maxSoftAlphaPixels": 0,
+      "maxChromaFringePixels": 0,
+      "maxCentroidJumpRatio": 0.05,
+      "maxBaselineJumpRatio": 0.04
+    },
+    "violations": [],
+    "checks": [
+      "no whole-character squash/stretch",
+      "no excessive centroid or baseline jump",
+      "no soft alpha",
+      "no hue-preserving chroma fringe",
+      "last-to-first loop boundary included"
+    ]
   },
   "appExports": {
     "project": "examples/beginner-pets/toto-sprout-turtle/toto-sprout-turtle.pixelpet",
@@ -125,22 +244,89 @@
     },
     "position": {
       "x": 1504,
-      "y": 828
+      "y": 826
     },
     "windowVisible": true,
     "alwaysOnTop": true,
-    "capture": {
-      "width": 384,
-      "height": 384
-    },
-    "nonTransparentPixels": 42912,
-    "captureSha256": "8bc58048a2d81655a89a3e194eb77387d1937d2be922e35be37d64cb3702ce88",
-    "verificationPath": "exported project -> WindowManager.startPet -> visible pet capture"
+    "motionDriver": "frames",
+    "expectedLoop": [
+      0,
+      1,
+      2,
+      3,
+      0
+    ],
+    "observedLoop": [
+      0,
+      1,
+      2,
+      3,
+      0
+    ],
+    "intervalsMs": [
+      271,
+      240,
+      261,
+      250
+    ],
+    "captures": [
+      {
+        "index": 0,
+        "atMs": 25,
+        "capture": {
+          "width": 384,
+          "height": 384
+        },
+        "nonTransparentPixels": 42120,
+        "captureSha256": "b04ab1b3850afd6e820e2f56f86629abc179b0c2a1ae38a55496a213d0ee3e60"
+      },
+      {
+        "index": 1,
+        "atMs": 296,
+        "capture": {
+          "width": 384,
+          "height": 384
+        },
+        "nonTransparentPixels": 42264,
+        "captureSha256": "5d174de89da0dacbed0921c272f3b5fcd7a77574d00347ff7a86e50edef095ce"
+      },
+      {
+        "index": 2,
+        "atMs": 536,
+        "capture": {
+          "width": 384,
+          "height": 384
+        },
+        "nonTransparentPixels": 42228,
+        "captureSha256": "4853cb14f78b71216973b6f9c83e3fd516e0ba2849162a24bd13f8203c9a553d"
+      },
+      {
+        "index": 3,
+        "atMs": 797,
+        "capture": {
+          "width": 384,
+          "height": 384
+        },
+        "nonTransparentPixels": 42120,
+        "captureSha256": "221d46e627ce39ed176a2a8521af9c79f1c5a8867a6ab213aeb2dac8d876b622"
+      },
+      {
+        "index": 0,
+        "atMs": 1047,
+        "capture": {
+          "width": 384,
+          "height": 384
+        },
+        "nonTransparentPixels": 42120,
+        "captureSha256": "b04ab1b3850afd6e820e2f56f86629abc179b0c2a1ae38a55496a213d0ee3e60"
+      }
+    ],
+    "verificationPath": "exported project -> WindowManager.startPet -> chronological visible captures"
   },
   "reproducibility": {
     "deterministic": false,
-    "reason": "Frame UUIDs, timestamps, and animated preview capture vary between runs.",
-    "stableInputs": "Source SHA-256, app version, pipeline settings, and every completed output hash are recorded.",
+    "reason": "The image-generation step, frame UUIDs, timestamps, and animated captures can vary.",
+    "stableInputs": "The approved pose sheet SHA-256, app version, processing settings, quality diagnostics, and completed output hashes are recorded.",
     "runtime": {
       "node": "24.18.0",
       "electron": "43.1.1",
@@ -148,13 +334,13 @@
     }
   },
   "outputSha256": {
-    "examples/beginner-pets/toto-sprout-turtle/toto-sprout-turtle.pixelpet": "2d5555e35649d7d531f139e783a6c3189a8f8cca25a7671f7d8b520fd0531ea2",
-    "examples/beginner-pets/toto-sprout-turtle/toto-sprout-turtle-spritesheet.png": "f00573276e14856cdab81cda1c3963a2472333eed0fbc9e9c1d1f5e05bf264c2",
-    "examples/beginner-pets/toto-sprout-turtle/generated/idle-01.png": "8ad97f4043d00c3816229f9d6c4e4cdcac8315dce0d78a4dce7bdacc1ee05bf8",
-    "examples/beginner-pets/toto-sprout-turtle/generated/idle-02.png": "da72fa4e5471890d164002dba5942a47f84b518a3ee6da1870cdbe9bfeb704e0",
-    "examples/beginner-pets/toto-sprout-turtle/generated/idle-03.png": "a8b9ff81c06bf9d83d65d9c0a51853e70bf6d643c191710494c3a75ffea2c94a",
-    "examples/beginner-pets/toto-sprout-turtle/generated/idle-04.png": "898f56e83431d5dee8d6519076941088fd2155e565a3970d063e5f65d08fb860",
-    "examples/beginner-pets/toto-sprout-turtle/app-preview.png": "ebe22e8609bc9b9e78e08eb199a5401a65e7ffd5e3f6be6e4859377d514c403d"
+    "examples/beginner-pets/toto-sprout-turtle/toto-sprout-turtle.pixelpet": "922308dd52513382a4a9adf7f69b16cd219a66b7e786b4c35e1fc430278bc53f",
+    "examples/beginner-pets/toto-sprout-turtle/toto-sprout-turtle-spritesheet.png": "34f7190f43a86e2eeb014d2ac6db0e69489c4815ef4b626b1af7983e93512f8a",
+    "examples/beginner-pets/toto-sprout-turtle/generated/idle-01.png": "587cbd975f40501ef60987addd2a42c9eada519f475ed1a5a6bc8e11fa0f2016",
+    "examples/beginner-pets/toto-sprout-turtle/generated/idle-02.png": "e1bd3823170ab2bc95e4e961845c6d954c9f517b5f62bccc98804b2df7184f2d",
+    "examples/beginner-pets/toto-sprout-turtle/generated/idle-03.png": "edcd93c7abded6f7084bdba8c8f0fceca3bbe993d94e5ade5f051a565cb82275",
+    "examples/beginner-pets/toto-sprout-turtle/generated/idle-04.png": "486d8d3084493cf139ecd0bd4b0c1c37f1c7e26242cc27dcc102379d1600ebcc",
+    "examples/beginner-pets/toto-sprout-turtle/app-preview.png": "e3efa1555da73d45c4e01a51cd50360ad44199d677811474a7cceda26343fafc"
   },
   "rightsBoundary": "Original public sample assets created for this repository."
 }

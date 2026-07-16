@@ -46,7 +46,7 @@ app.whenReady().then(async () => {
         await waitFor(() => button('프레임 가져오기'), 'studio did not mount', 15000);
         button('프레임 가져오기').click();
         const input = await waitFor(
-          () => document.querySelector('.frames-panel__heading input[type=file]'),
+          () => document.querySelector('[data-testid="bulk-motion-frames-input"]'),
           'frame input did not mount',
         );
 

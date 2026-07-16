@@ -98,6 +98,17 @@ export function assertPixelPetProject(value: unknown): asserts value is PixelPet
   if (!isPositiveFiniteNumber(value.fps) || value.fps > 60) {
     throw new TypeError("PixelPet FPS must be between 0 and 60.");
   }
+  if (value.motionFps !== undefined) {
+    if (!isRecord(value.motionFps)) {
+      throw new TypeError("PixelPet motion FPS values must be grouped by animation.");
+    }
+    for (const animation of PET_ANIMATION_NAMES) {
+      const motionFps = value.motionFps[animation];
+      if (!isPositiveFiniteNumber(motionFps) || motionFps > 60) {
+        throw new TypeError(`PixelPet ${animation} FPS must be between 0 and 60.`);
+      }
+    }
+  }
   if (!isPositiveFiniteNumber(value.scale) || value.scale > 16) {
     throw new TypeError("PixelPet scale must be between 0 and 16.");
   }

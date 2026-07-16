@@ -2,6 +2,7 @@ const { app, BrowserWindow } = require("electron");
 const crypto = require("node:crypto");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const sharp = require("sharp");
 
 const {
   installAppProtocol,
@@ -13,6 +14,8 @@ const { WindowManager } = require("../dist-electron/main/window-manager.js");
 const root = path.resolve(__dirname, "..");
 const packageJson = require(path.join(root, "package.json"));
 const includeLocalPavi = process.argv.includes("--include-local-pavi");
+const projectMotionFps = (project, animation) =>
+  project.motionFps?.[animation] ?? project.fps;
 
 const publicSamples = [
   "haeori-sun-otter",
@@ -21,7 +24,13 @@ const publicSamples = [
 ].map((id) => ({
   id,
   public: true,
-  source: path.join(root, "examples", "beginner-pets", id, "pixel-master-chroma.png"),
+  sourceSheet: path.join(
+    root,
+    "examples",
+    "beginner-pets",
+    id,
+    "ai-idle-sheet-chroma.png",
+  ),
   output: path.join(root, "examples", "beginner-pets", id),
 }));
 
@@ -30,7 +39,13 @@ if (includeLocalPavi) {
   samples.push({
     id: "rra-pavi",
     public: false,
-    source: path.join(root, "tmp", "local-examples", "rra-pavi", "pixel-master-chroma.png"),
+    sourceSheet: path.join(
+      root,
+      "tmp",
+      "local-examples",
+      "rra-pavi",
+      "ai-idle-sheet-chroma.png",
+    ),
     output: path.join(root, "tmp", "local-examples", "rra-pavi", "result"),
   });
 }
@@ -55,10 +70,16 @@ function assertInside(candidate, parent, description) {
 
 async function assertInputs() {
   for (const sample of samples) {
-    const stats = await fs.stat(sample.source).catch(() => null);
-    if (!stats?.isFile()) throw new Error(`Missing sample input: ${relativeToRoot(sample.source)}`);
+    const stats = await fs.stat(sample.sourceSheet).catch(() => null);
+    if (!stats?.isFile()) {
+      throw new Error(`Missing sample input: ${relativeToRoot(sample.sourceSheet)}`);
+    }
     if (!sample.public) {
-      assertInside(sample.source, path.join(root, "tmp", "local-examples"), "Local Pavi input");
+      assertInside(
+        sample.sourceSheet,
+        path.join(root, "tmp", "local-examples"),
+        "Local Pavi input",
+      );
       assertInside(sample.output, path.join(root, "tmp", "local-examples"), "Local Pavi output");
     }
   }
@@ -131,10 +152,10 @@ const rendererHelpers = `
   };
 `;
 
-async function prepareQuickPet(window, sample, sourceBuffer) {
+async function preparePoseSheet(window, sample, sourceBuffer) {
   const payload = JSON.stringify({
     id: sample.id,
-    name: path.basename(sample.source),
+    name: path.basename(sample.sourceSheet),
     base64: sourceBuffer.toString("base64"),
   });
   return window.webContents.executeJavaScript(`(async () => {
@@ -147,11 +168,11 @@ async function prepareQuickPet(window, sample, sourceBuffer) {
     const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
     valueSetter.call(projectName, payload.id);
     projectName.dispatchEvent(new Event('input', { bubbles: true }));
-    document.querySelector('[data-testid="workflow-step-remove"]').click();
+    document.querySelector('[data-testid="workflow-step-frames"]').click();
 
     const input = await waitFor(
-      () => document.querySelector('[data-testid="quick-pet-file-input"]'),
-      'Quick-pet input did not mount',
+      () => document.querySelector('[data-testid="pose-sheet-input"]'),
+      'Pose-sheet input did not mount',
     );
     const bytes = Uint8Array.from(atob(payload.base64), (character) => character.charCodeAt(0));
     const transfer = new DataTransfer();
@@ -159,125 +180,64 @@ async function prepareQuickPet(window, sample, sourceBuffer) {
     Object.defineProperty(input, 'files', { configurable: true, value: transfer.files });
     input.dispatchEvent(new Event('change', { bubbles: true }));
 
-    const card = await waitFor(() => {
-      const value = document.querySelector('[data-testid="quick-pet-card"]');
-      const finished = value?.dataset.phase === 'success' || value?.dataset.phase === 'error';
-      return finished && value.dataset.fileName === payload.name ? value : null;
-    }, 'Quick-pet processing timed out');
-    if (card.dataset.phase === 'error') {
-      throw new Error(document.querySelector('[data-testid="quick-pet-progress"]')?.textContent || 'Quick-pet failed');
-    }
-    const frames = [...document.querySelectorAll('[data-testid="quick-pet-result"] img')];
-    if (frames.length !== 4) throw new Error('Expected four idle frames, got ' + frames.length);
-    await waitFor(() => frames.every((image) => image.complete && image.naturalWidth > 0), 'Idle frames did not decode');
-    const key = card.dataset.chromaKey
-      ? card.dataset.chromaKey.split(',').map(Number)
-      : null;
-    const inspectFrame = (image) => {
-      const canvas = document.createElement('canvas');
-      canvas.width = image.naturalWidth;
-      canvas.height = image.naturalHeight;
-      const context = canvas.getContext('2d');
-      context.drawImage(image, 0, 0);
-      const data = context.getImageData(0, 0, canvas.width, canvas.height).data;
-      const pixelCount = canvas.width * canvas.height;
-      const transparent = new Uint8Array(pixelCount);
-      let opaquePixels = 0;
-      let softAlphaPixels = 0;
-      let chromaFringePixels = 0;
-      let left = canvas.width;
-      let top = canvas.height;
-      let right = -1;
-      let bottom = -1;
-      for (let pixel = 0; pixel < pixelCount; pixel += 1) {
-        const index = pixel * 4;
-        const alpha = data[index + 3];
-        if (alpha === 0) transparent[pixel] = 1;
-        if (alpha === 255) opaquePixels += 1;
-        if (alpha !== 0 && alpha !== 255) softAlphaPixels += 1;
-        if (alpha > 0) {
-          const x = pixel % canvas.width;
-          const y = Math.floor(pixel / canvas.width);
-          left = Math.min(left, x);
-          top = Math.min(top, y);
-          right = Math.max(right, x);
-          bottom = Math.max(bottom, y);
-          if (key && Math.hypot(data[index] - key[0], data[index + 1] - key[1], data[index + 2] - key[2]) < 80) {
-            chromaFringePixels += 1;
-          }
-        }
-      }
-
-      const visited = new Uint8Array(pixelCount);
-      const queue = new Int32Array(pixelCount);
-      let largestEnclosedTransparentRegion = 0;
-      for (let start = 0; start < pixelCount; start += 1) {
-        if (!transparent[start] || visited[start]) continue;
-        let head = 0;
-        let tail = 0;
-        let touchesEdge = false;
-        visited[start] = 1;
-        queue[tail++] = start;
-        while (head < tail) {
-          const pixel = queue[head++];
-          const x = pixel % canvas.width;
-          const y = Math.floor(pixel / canvas.width);
-          if (x === 0 || y === 0 || x === canvas.width - 1 || y === canvas.height - 1) touchesEdge = true;
-          const neighbors = [
-            x > 0 ? pixel - 1 : -1,
-            x + 1 < canvas.width ? pixel + 1 : -1,
-            y > 0 ? pixel - canvas.width : -1,
-            y + 1 < canvas.height ? pixel + canvas.width : -1,
-          ];
-          for (const neighbor of neighbors) {
-            if (neighbor >= 0 && transparent[neighbor] && !visited[neighbor]) {
-              visited[neighbor] = 1;
-              queue[tail++] = neighbor;
-            }
-          }
-        }
-        if (!touchesEdge) largestEnclosedTransparentRegion = Math.max(largestEnclosedTransparentRegion, tail);
-      }
-      const alphaBounds = right >= left
-        ? { x: left, y: top, width: right - left + 1, height: bottom - top + 1 }
+    const importedFrames = await waitFor(() => {
+      const images = [...document.querySelectorAll('[data-testid^="frame-slot-idle-"] img')];
+      return images.length === 4 &&
+        images.every((image) => image.complete && image.naturalWidth > 0)
+        ? images
         : null;
-      return {
-        width: canvas.width,
-        height: canvas.height,
-        opaquePixels,
-        softAlphaPixels,
-        chromaFringePixels,
-        alphaBounds,
-        largestEnclosedTransparentRegion,
-      };
-    };
-    const frameDiagnostics = frames.map(inspectFrame);
+    }, 'Pose sheet did not fill four idle slots');
+    if (!importedFrames.every((image) =>
+      image.naturalWidth === importedFrames[0].naturalWidth &&
+      image.naturalHeight === importedFrames[0].naturalHeight
+    )) {
+      throw new Error('Pose sheet cells did not retain equal dimensions.');
+    }
+    const sourceCellSizes = importedFrames.map((image) => ({
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+    }));
+
+    const processButton = await waitFor(
+      () => document.querySelector('[data-testid="process-motion-frames"]'),
+      'Motion batch processor did not mount',
+    );
+    if (processButton.disabled) throw new Error('Motion batch processor was unexpectedly disabled.');
+    processButton.click();
+
+    const status = await waitFor(() => {
+      const value = document.querySelector('[data-testid="motion-frame-processing-status"]');
+      if (value?.classList.contains('motion-batch-status--success')) return value;
+      if (value?.classList.contains('motion-batch-status--error')) return value;
+      return null;
+    }, 'Pose frame processing timed out');
+    if (status.classList.contains('motion-batch-status--error')) {
+      throw new Error(status.textContent || 'Pose frame processing failed');
+    }
+
+    const processedFrames = await waitFor(() => {
+      const images = [...document.querySelectorAll('[data-testid^="frame-slot-idle-"] img')];
+      return images.length === 4 &&
+        images.every((image) => image.complete && image.naturalWidth === 64 && image.naturalHeight === 64)
+        ? images
+        : null;
+    }, 'Processed idle frames did not become 64 x 64');
+
     return {
-      backgroundRemoval: card.dataset.backgroundRemoval,
-      chromaCleanup: card.dataset.chromaCleanup,
-      chromaKey: card.dataset.chromaKey,
-      frameSizes: frames.map((image) => ({ width: image.naturalWidth, height: image.naturalHeight })),
-      frameDiagnostics,
+      sourceCellSizes,
+      frameSizes: processedFrames.map((image) => ({
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      })),
+      processingDetail: [
+        status.querySelector('strong')?.textContent,
+        status.querySelector('span')?.textContent,
+      ]
+        .map((value) => value?.replace(/\\s+/g, ' ').trim())
+        .filter(Boolean)
+        .join(' · '),
     };
   })()`, true);
-}
-
-async function downloadIdleFrame(window, downloadTo, output, index) {
-  await downloadTo(output, () =>
-    window.webContents.executeJavaScript(`(async () => {
-      const image = document.querySelector('[data-testid="quick-pet-frame-${index}"] img');
-      if (!image) throw new Error('Missing quick-pet frame ${index + 1}');
-      const blob = await (await fetch(image.src)).blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = 'idle-${String(index + 1).padStart(2, "0")}.png';
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    })()`, true),
-  );
 }
 
 async function clickExport(window, downloadTo, output, testId) {
@@ -356,12 +316,8 @@ async function verifyDesktopPet(windows, studioWindow, project) {
     }
     if (!petWindow) throw new Error(`Desktop pet window was not visible: ${project.name}`);
 
-    const captures = [];
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      petWindow.webContents.invalidate();
-      await wait(220);
-      captures.push(await petWindow.webContents.capturePage());
-    }
+    const dataUrls = project.frames.idle.filter(Boolean).map((frame) => frame.dataUrl);
+    const expectedLoop = [0, 1, 2, 3, 0];
     const nonTransparentPixels = (image) => {
       const bitmap = image.toBitmap();
       let count = 0;
@@ -370,14 +326,101 @@ async function verifyDesktopPet(windows, studioWindow, project) {
       }
       return count;
     };
-    const capture = captures.sort(
-      (left, right) => nonTransparentPixels(right) - nonTransparentPixels(left),
-    )[0];
-    const visiblePixels = nonTransparentPixels(capture);
-    if (capture.isEmpty() || visiblePixels === 0) {
-      throw new Error(`Desktop pet renderer was empty: ${project.name}`);
+
+    const waitForFirstFrame = async () => {
+      const startedAt = Date.now();
+      while (Date.now() - startedAt < 5000) {
+        const rendered = await petWindow.webContents.executeJavaScript(`(() => {
+          const surface = document.querySelector('.pet-surface');
+          const image = surface?.querySelector('img');
+          return image
+            ? {
+                source: image.currentSrc || image.src,
+                motionDriver: surface.dataset.motionDriver || '',
+              }
+            : null;
+        })()`);
+        if (rendered?.source === dataUrls[0]) return rendered;
+        await wait(12);
+      }
+      throw new Error(`Desktop pet did not render the first frame: ${project.name}`);
+    };
+    const firstRendered = await waitForFirstFrame();
+    if (firstRendered.motionDriver !== "frames") {
+      throw new Error(`Desktop pet combined frame playback with CSS motion: ${project.name}`);
     }
-    const capturePng = capture.toPNG();
+
+    const observations = [];
+    let previousSource = "";
+    const observationStart = performance.now();
+    while (
+      performance.now() - observationStart < 5000 &&
+      observations.length < expectedLoop.length
+    ) {
+      const rendered = await petWindow.webContents.executeJavaScript(`(() => {
+        const surface = document.querySelector('.pet-surface');
+        const image = surface?.querySelector('img');
+        return image
+          ? {
+              source: image.currentSrc || image.src,
+              motionDriver: surface.dataset.motionDriver || '',
+            }
+          : null;
+      })()`);
+      if (!rendered?.source || rendered.source === previousSource) {
+        await wait(12);
+        continue;
+      }
+      previousSource = rendered.source;
+      const frameIndex = dataUrls.indexOf(rendered.source);
+      if (frameIndex < 0) {
+        throw new Error(`Desktop pet rendered an unknown frame: ${project.name}`);
+      }
+      if (rendered.motionDriver !== "frames") {
+        throw new Error(`Desktop pet used an unexpected motion driver: ${project.name}`);
+      }
+
+      petWindow.webContents.invalidate();
+      await wait(18);
+      const capture = await petWindow.webContents.capturePage();
+      const sourceAfterCapture = await petWindow.webContents.executeJavaScript(
+        "document.querySelector('.pet-surface img')?.currentSrc || document.querySelector('.pet-surface img')?.src || ''",
+      );
+      if (sourceAfterCapture !== rendered.source) continue;
+      const visiblePixels = nonTransparentPixels(capture);
+      if (capture.isEmpty() || visiblePixels === 0) {
+        throw new Error(`Desktop pet renderer was empty: ${project.name}`);
+      }
+      observations.push({
+        index: frameIndex,
+        atMs: Math.round(performance.now() - observationStart),
+        capture: capture.getSize(),
+        nonTransparentPixels: visiblePixels,
+        captureSha256: sha256(capture.toPNG()),
+      });
+    }
+
+    const observedLoop = observations.map((item) => item.index);
+    if (JSON.stringify(observedLoop) !== JSON.stringify(expectedLoop)) {
+      throw new Error(
+        `Desktop pet frames were out of order for ${project.name}: ${observedLoop.join("→")}`,
+      );
+    }
+    const intervals = observations
+      .slice(1)
+      .map((item, index) => item.atMs - observations[index].atMs);
+    const targetInterval = 1000 / projectMotionFps(project, "idle");
+    if (
+      intervals.some(
+        (interval) =>
+          interval < targetInterval * 0.45 || interval > targetInterval * 1.8,
+      )
+    ) {
+      throw new Error(
+        `Desktop pet timing drifted for ${project.name}: ${intervals.join(", ")}ms`,
+      );
+    }
+
     return {
       status: runningState.status,
       animation: runningState.animation,
@@ -385,14 +428,80 @@ async function verifyDesktopPet(windows, studioWindow, project) {
       position: runningState.position,
       windowVisible: petWindow.isVisible(),
       alwaysOnTop: petWindow.isAlwaysOnTop(),
-      capture: capture.getSize(),
-      nonTransparentPixels: visiblePixels,
-      captureSha256: sha256(capturePng),
-      verificationPath: "exported project -> WindowManager.startPet -> visible pet capture",
+      motionDriver: firstRendered.motionDriver,
+      expectedLoop,
+      observedLoop,
+      intervalsMs: intervals,
+      captures: observations,
+      verificationPath:
+        "exported project -> WindowManager.startPet -> chronological visible captures",
     };
   } finally {
     windows.stopPet();
   }
+}
+
+function pngDataUrlBuffer(dataUrl, label) {
+  const match = /^data:image\/png;base64,([A-Za-z0-9+/=\r\n]+)$/.exec(dataUrl);
+  if (!match) throw new Error(`${label}: expected an embedded PNG data URL`);
+  return Buffer.from(match[1], "base64");
+}
+
+async function writeIdleFrames(project, generatedDirectory) {
+  const frames = project.frames?.idle?.filter(Boolean) ?? [];
+  if (frames.length !== 4) {
+    throw new Error(`Expected four exported idle frames, got ${frames.length}.`);
+  }
+  await fs.rm(generatedDirectory, { recursive: true, force: true });
+  await fs.mkdir(generatedDirectory, { recursive: true });
+  const paths = [];
+  for (let index = 0; index < frames.length; index += 1) {
+    const output = path.join(
+      generatedDirectory,
+      `idle-${String(index + 1).padStart(2, "0")}.png`,
+    );
+    await fs.writeFile(
+      output,
+      pngDataUrlBuffer(frames[index].dataUrl, `idle frame ${index + 1}`),
+    );
+    paths.push(output);
+  }
+  return paths;
+}
+
+async function evaluateProjectFrames(project, projectLabel) {
+  const { evaluateFrameSequence } = await import("./frame-quality.mjs");
+  const idle = project.frames?.idle?.filter(Boolean) ?? [];
+  const frames = await Promise.all(
+    idle.map(async (frame, index) => {
+      const [decoded, evidence] = await Promise.all([
+        sharp(
+          pngDataUrlBuffer(frame.dataUrl, `${projectLabel} idle frame ${index + 1}`),
+        )
+          .ensureAlpha()
+          .raw()
+          .toBuffer({ resolveWithObject: true }),
+        sharp(
+          pngDataUrlBuffer(
+            frame.originalDataUrl,
+            `${projectLabel} idle original frame ${index + 1}`,
+          ),
+        )
+          .ensureAlpha()
+          .raw()
+          .toBuffer({ resolveWithObject: true }),
+      ]);
+      return {
+        label: `${projectLabel}#idle-${index + 1}`,
+        rgba: decoded.data,
+        evidenceRgba: evidence.data,
+        width: decoded.info.width,
+        height: decoded.info.height,
+        keyRgb: Array.isArray(frame.chromaKey) ? frame.chromaKey : null,
+      };
+    }),
+  );
+  return evaluateFrameSequence(frames);
 }
 
 async function buildSample(window, downloadTo, windows, sample) {
@@ -404,37 +513,17 @@ async function buildSample(window, downloadTo, windows, sample) {
   // Never leave an older authoritative log beside partially replaced files if
   // this run fails halfway through.
   await fs.rm(runLogPath, { force: true });
-  await fs.mkdir(generatedDirectory, { recursive: true });
-
-  const sourceBuffer = await fs.readFile(sample.source);
+  const sourceBuffer = await fs.readFile(sample.sourceSheet);
+  const sourceMetadata = await sharp(sourceBuffer).metadata();
+  if (
+    !sourceMetadata.width ||
+    !sourceMetadata.height ||
+    sourceMetadata.width % 4 !== 0
+  ) {
+    throw new Error(`Pose sheet must contain four equal horizontal cells: ${sample.id}`);
+  }
   const startedAt = new Date().toISOString();
-  const quickResult = await prepareQuickPet(window, sample, sourceBuffer);
-  for (const [index, diagnostics] of quickResult.frameDiagnostics.entries()) {
-    if (diagnostics.opaquePixels <= 100 || !diagnostics.alphaBounds) {
-      throw new Error(`Quick-pet frame ${index + 1} has no usable foreground: ${sample.id}`);
-    }
-    if (diagnostics.softAlphaPixels !== 0 || diagnostics.chromaFringePixels !== 0) {
-      throw new Error(`Quick-pet frame ${index + 1} retained soft alpha or chroma: ${sample.id}`);
-    }
-    if (diagnostics.largestEnclosedTransparentRegion > 32) {
-      throw new Error(
-        `Quick-pet frame ${index + 1} contains a large transparent interior hole (${diagnostics.largestEnclosedTransparentRegion} px): ${sample.id}`,
-      );
-    }
-  }
-
-  const idlePaths = [];
-  for (let index = 0; index < 4; index += 1) {
-    const output = path.join(generatedDirectory, `idle-${String(index + 1).padStart(2, "0")}.png`);
-    await downloadIdleFrame(window, downloadTo, output, index);
-    idlePaths.push(output);
-  }
-  const distinctIdleHashes = new Set(
-    await Promise.all(idlePaths.map(async (output) => sha256(await fs.readFile(output)))),
-  );
-  if (distinctIdleHashes.size < 3) {
-    throw new Error(`Quick-pet idle loop did not contain enough visible frame variation: ${sample.id}`);
-  }
+  const poseResult = await preparePoseSheet(window, sample, sourceBuffer);
 
   await capturePreview(window, previewPath);
   await window.webContents.executeJavaScript(`(async () => {
@@ -453,6 +542,26 @@ async function buildSample(window, downloadTo, windows, sample) {
   if (project.frames?.idle?.filter(Boolean).length !== 4) {
     throw new Error(`App export did not contain four idle frames: ${sample.id}`);
   }
+  if (projectMotionFps(project, "idle") !== 4) {
+    throw new Error(`App export did not use the idle-safe 4 FPS setting: ${sample.id}`);
+  }
+  const idlePaths = await writeIdleFrames(project, generatedDirectory);
+  const distinctIdleHashes = new Set(
+    await Promise.all(
+      idlePaths.map(async (output) => sha256(await fs.readFile(output))),
+    ),
+  );
+  if (distinctIdleHashes.size !== 4) {
+    throw new Error(`AI pose loop must contain four distinct frames: ${sample.id}`);
+  }
+  const qualityReport = await evaluateProjectFrames(project, sample.id);
+  if (!qualityReport.passed) {
+    throw new Error(
+      `Frame quality gate failed for ${sample.id}: ${qualityReport.violations
+        .map((violation) => violation.code)
+        .join(", ")}`,
+    );
+  }
   const desktopPetVerification = await verifyDesktopPet(windows, window, project);
 
   const outputPaths = [projectPath, spriteSheetPath, ...idlePaths, previewPath];
@@ -462,39 +571,72 @@ async function buildSample(window, downloadTo, windows, sample) {
   }
   const firstFrame = project.frames.idle.find(Boolean);
   const runLog = {
-    schemaVersion: "1.0.0",
+    schemaVersion: "2.0.0",
     sampleId: sample.id,
     public: sample.public,
     startedAt,
     completedAt: new Date().toISOString(),
     source: {
-      path: relativeToRoot(sample.source),
+      path: relativeToRoot(sample.sourceSheet),
       sha256: sha256(sourceBuffer),
       bytes: sourceBuffer.byteLength,
+      sheet: {
+        width: sourceMetadata.width,
+        height: sourceMetadata.height,
+        layout: "one horizontal row / four equal cells / left-to-right",
+        cellWidth: sourceMetadata.width / 4,
+        cellHeight: sourceMetadata.height,
+      },
     },
     pipeline: {
       app: "PixelPet Studio",
       appVersion: packageJson.version,
       mode: "hidden-electron-browser-mode",
-      entryPoint: "Step 3 / quick-pet UI",
-      imageProcessing: "PixelPet quick UI only; no external image post-processing",
-      backgroundRemoval: quickResult.backgroundRemoval,
-      backgroundRemovalModel:
-        quickResult.backgroundRemoval === "performed" ? "IMG.LY isnet_quint8 / CPU" : "skipped-existing-alpha",
-      flatChromaPostprocess:
-        quickResult.chromaCleanup === "applied"
-          ? {
-              applied: true,
-              keyRgb: quickResult.chromaKey.split(",").map(Number),
-              operations: ["key-distance matte", "despill", "pixel hard-alpha"],
-            }
-          : { applied: false },
-      fit: "cleaned alpha bbox / bottom-center / nearest-neighbor",
-      idlePreset: ["neutral", "inhale-up", "soft-squash", "exhale"],
+      entryPoint: "Step 2 / pose-sheet import and shared motion-frame processing",
+      imageProcessing:
+        "PixelPet Studio UI only after image generation; browser-canvas equal split, flat-chroma cleanup, shared alignment, export",
+      sourceFrameSizes: poseResult.sourceCellSizes,
+      backgroundRemoval: "flat-chroma-direct",
+      backgroundRemovalModel: "not used for the uniform prompt background",
+      flatChromaPostprocess: {
+        applied: true,
+        keyRgb: firstFrame.chromaKey,
+        operations: [
+          "key-distance matte",
+          "despill",
+          "HSV hue and chroma-direction residue detection",
+          "exterior-boundary nearest-foreground color repair",
+          "source and final-canvas fringe pass",
+          "pixel hard-alpha",
+        ],
+      },
+      fit:
+        "robust body-row anchor stabilization with capped correction / shared union alpha bounds / one common scale and placement / nearest-neighbor",
+      idlePreset: [
+        "AI-authored neutral",
+        "AI-authored inhale",
+        "AI-authored local-part transition",
+        "AI-authored exhale",
+      ],
       canvas: { width: firstFrame.width, height: firstFrame.height },
-      frameDiagnostics: quickResult.frameDiagnostics,
-      fps: project.fps,
+      frameDiagnostics: qualityReport.diagnostics,
+      transitions: qualityReport.transitions,
+      processingDetail: poseResult.processingDetail,
+      fps: projectMotionFps(project, "idle"),
+      motionFps: project.motionFps,
       scale: project.scale,
+    },
+    qualityGate: {
+      passed: qualityReport.passed,
+      thresholds: qualityReport.thresholds,
+      violations: qualityReport.violations,
+      checks: [
+        "no whole-character squash/stretch",
+        "no excessive centroid or baseline jump",
+        "no soft alpha",
+        "no hue-preserving chroma fringe",
+        "last-to-first loop boundary included",
+      ],
     },
     appExports: {
       project: relativeToRoot(projectPath),
@@ -508,8 +650,10 @@ async function buildSample(window, downloadTo, windows, sample) {
     desktopPetVerification,
     reproducibility: {
       deterministic: false,
-      reason: "Frame UUIDs, timestamps, and animated preview capture vary between runs.",
-      stableInputs: "Source SHA-256, app version, pipeline settings, and every completed output hash are recorded.",
+      reason:
+        "The image-generation step, frame UUIDs, timestamps, and animated captures can vary.",
+      stableInputs:
+        "The approved pose sheet SHA-256, app version, processing settings, quality diagnostics, and completed output hashes are recorded.",
       runtime: {
         node: process.versions.node,
         electron: process.versions.electron,
@@ -528,7 +672,8 @@ async function buildSample(window, downloadTo, windows, sample) {
       sample: sample.id,
       public: sample.public,
       canvas: runLog.pipeline.canvas,
-      removal: quickResult.backgroundRemoval,
+      removal: runLog.pipeline.backgroundRemoval,
+      quality: runLog.qualityGate.passed,
       output: relativeToRoot(sample.output),
     }),
   );

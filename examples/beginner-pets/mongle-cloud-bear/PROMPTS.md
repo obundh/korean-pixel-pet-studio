@@ -1,6 +1,6 @@
 # Mongle 생성 프롬프트 기록
 
-아래 두 프롬프트는 Mongle의 `source.png`와 `pixel-master-chroma.png`를 만들 때 Codex 내장 imagegen에 전달한 원문입니다. 재현 시 생성 모델의 변동 때문에 픽셀 배치가 완전히 같지는 않을 수 있습니다.
+아래에는 Mongle의 원본, 픽셀 마스터, 실제 대기 포즈 시트와 최소 수정본을 만들 때 Codex 내장 imagegen에 전달한 프롬프트를 단계별로 기록했습니다. 재현 시 생성 모델의 변동 때문에 픽셀 배치가 완전히 같지는 않을 수 있습니다.
 
 ## 1단계 · 오리지널 마스코트 원본
 
@@ -43,19 +43,45 @@ Constraints: Image 1 controls identity; Image 2 must not contribute its subject 
 
 마젠타 `#ff00ff`는 최종 배경이 아니라 PixelPet Studio의 배경 제거를 검증하기 위한 단색 입력입니다.
 
-## 3단계 · 앱 빠른 만들기
+## 3단계 · 실제 대기 포즈 4장
 
-이 단계에는 생성형 AI 프롬프트가 없습니다.
+- 첨부 이미지: [`pixel-master-chroma.png`](pixel-master-chroma.png)
+- 1차 출력: 내장 imagegen 4포즈 시트
+- 최종 출력: [`ai-idle-sheet-chroma.png`](ai-idle-sheet-chroma.png)
+- 생성 모드: 내장 imagegen · 캐릭터 정체성 유지 편집
 
 ```text
-배경 제거
-→ 이미지 한 장으로 자동 완성
-→ 이미지 한 장 고르기
-→ pixel-master-chroma.png
-→ 로컬 배경 제거
-→ 64×64 정규화
-→ idle 4장
+Use case: identity-preserve
+Asset type: four-frame pixel-art idle animation source sheet for a desktop pet
+Input image: edit target and strict character identity reference — the lavender cloud bear shown in the supplied image
+Primary request: Create a genuine four-frame idle breathing animation of exactly this same character, arranged in one horizontal row of four equal cells, chronological left to right: (1) neutral standing pose, (2) gentle inhale with chest lifting and cape clasp rising slightly, (3) relaxed neutral transition with one subtle ear twitch, (4) gentle exhale with eyelids slightly lowered. Animate local body parts; do not scale or squash the entire character.
+Style/medium: crisp deliberate pixel art matching the reference exactly, consistent pixel grid and dark navy outline thickness
+Composition/framing: one character centered in each equal quarter; identical feet baseline, body center, scale, camera, and generous padding in every cell; full body visible; no panel dividers
+Scene/backdrop: perfectly flat uniform solid #ff00ff chroma-key background across the entire sheet
+Constraints: preserve the exact lavender fur, cream cloud tuft, peach inner ears and cheeks, navy cape, mint clasp, white belly, face, paws, tail and proportions. Keep the feet planted. Four frames must be visibly distinct but subtle and form a seamless loop. No whole-body geometric stretching. No added objects. No text, labels, shadows, gradients, floor, border, watermark, or extra characters. Do not use #ff00ff in the character.
+```
+
+1차 결과의 세 번째 칸에 불필요한 동작선이 생겨 다음 최소 수정만 적용했습니다.
+
+```text
+Use case: precise-object-edit
+Asset type: corrected four-frame pixel-art animation source sheet
+Primary request: Remove only the three small white/pink motion marks above and to the right of the third bear. Replace those marks with the exact same flat #ff00ff background as the surrounding area.
+Constraints: keep all four bear frames pixel-for-pixel unchanged otherwise, including character identity, positions, colors, outlines, expressions, proportions, spacing, image dimensions, and chroma background. Do not add anything. No text, marks, shadows, panels, or watermark.
+```
+
+## 4단계 · 앱에서 시트 처리
+
+```text
+프레임 가져오기
+→ 가로 포즈 시트 가져오기
+→ ai-idle-sheet-chroma.png
+→ 왼쪽부터 idle 01~04로 4등분
+→ 현재 동작 4장 일괄 처리
+→ flat chroma 직접 제거
+→ 공통 알파 경계와 발 기준선으로 64×64 정렬
+→ 4 FPS 실제 프레임 재생 확인
 → 프로젝트·스프라이트시트 내보내기
 ```
 
-실행 모드와 출력 해시는 [`run-log.json`](run-log.json)에 있습니다.
+실행 모드, 시각 품질 검사와 출력 해시는 [`run-log.json`](run-log.json)에 있습니다.

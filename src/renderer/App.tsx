@@ -18,6 +18,7 @@ import { PetSurface } from "./components/PetSurface";
 import { removeImageBackground } from "./lib/backgroundRemoval";
 import {
   createFrameAsset,
+  createPoseSheetFrameAssets,
   dataUrlToBlob,
   downloadTextFile,
   fileToDataUrl,
@@ -27,7 +28,9 @@ import {
   imageHasMeaningfulTransparency,
   parseCanvasSize,
   postprocessFlatChromaDataUrl,
+  QUICK_PET_FPS,
 } from "./lib/quickPet";
+import { processMotionFrames } from "./lib/motionFrames";
 import { loadReferenceCatalog } from "./lib/referenceCatalog";
 import {
   ANIMATION_STATES,
@@ -55,6 +58,11 @@ type QuickPetState = {
   backgroundRemoval?: "skipped" | "performed";
   chromaCleanup?: "applied" | "not-needed";
   chromaKey?: string;
+};
+type MotionBatchState = {
+  phase: "idle" | "processing" | "success" | "error";
+  progress: number;
+  detail: string;
 };
 type LegalAction = "source" | "directory";
 
@@ -104,37 +112,42 @@ const STEP_ITEMS: Array<{
 
 const MOTION_META: Record<
   AnimationState,
-  { label: string; shortLabel: string; description: string; slots: number }
+  { label: string; shortLabel: string; description: string; slots: number; fps: number }
 > = {
   idle: {
     label: "대기",
     shortLabel: "IDLE",
     description: "가볍게 숨 쉬거나 제자리에서 기다려요.",
     slots: 4,
+    fps: 4,
   },
   walk: {
     label: "걷기",
     shortLabel: "WALK",
     description: "좌우 이동에 사용할 자연스러운 반복 동작이에요.",
     slots: 8,
+    fps: 8,
   },
   jump: {
     label: "점프",
     shortLabel: "JUMP",
     description: "도약부터 착지까지 한 번 재생되는 동작이에요.",
     slots: 6,
+    fps: 8,
   },
   sleep: {
     label: "잠자기",
     shortLabel: "SLEEP",
     description: "오래 움직이지 않을 때 보여 줄 편안한 루프예요.",
     slots: 4,
+    fps: 4,
   },
   reaction: {
     label: "반응",
     shortLabel: "REACT",
     description: "클릭하거나 쓰다듬을 때 보여 줄 짧은 동작이에요.",
     slots: 6,
+    fps: 8,
   },
 };
 
@@ -145,6 +158,29 @@ const createInitialFrames = (): FrameCollection =>
       Array.from({ length: MOTION_META[state].slots }, () => null),
     ]),
   ) as FrameCollection;
+
+type MotionFps = Record<AnimationState, number>;
+
+const createInitialMotionFps = (): MotionFps =>
+  Object.fromEntries(
+    ANIMATION_STATES.map((state) => [state, MOTION_META[state].fps]),
+  ) as MotionFps;
+
+const clampFps = (value: number, fallback: number): number =>
+  Number.isFinite(value) ? Math.min(16, Math.max(2, value)) : fallback;
+
+const normalizeMotionFps = (project: PixelPetProject): MotionFps => {
+  const legacyFps = clampFps(project.fps, 8);
+  return Object.fromEntries(
+    ANIMATION_STATES.map((state) => [
+      state,
+      clampFps(
+        project.motionFps?.[state] ?? legacyFps,
+        MOTION_META[state].fps,
+      ),
+    ]),
+  ) as MotionFps;
+};
 
 const normalizeFrames = (frames: PixelPetProject["frames"]): FrameCollection =>
   Object.fromEntries(
@@ -593,7 +629,7 @@ function Studio() {
   const [projectName, setProjectName] = useState("나의 픽셀 펫");
   const [projectPath, setProjectPath] = useState<string | undefined>();
   const [createdAt, setCreatedAt] = useState(() => new Date().toISOString());
-  const [fps, setFps] = useState(8);
+  const [motionFps, setMotionFps] = useState<MotionFps>(createInitialMotionFps);
   const [scale, setScale] = useState(3);
   const [playing, setPlaying] = useState(true);
   const [previewFrameIndex, setPreviewFrameIndex] = useState(0);
@@ -612,7 +648,13 @@ function Studio() {
     progress: 0,
     detail: "픽셀 마스코트 한 장만 고르면 나머지는 앱이 준비합니다.",
   });
+  const [motionBatch, setMotionBatch] = useState<MotionBatchState>({
+    phase: "idle",
+    progress: 0,
+    detail: "AI로 만든 포즈 여러 장을 가져온 뒤 한 번에 정리하세요.",
+  });
   const bulkInputRef = useRef<HTMLInputElement>(null);
+  const poseSheetInputRef = useRef<HTMLInputElement>(null);
   const quickPetInputRef = useRef<HTMLInputElement>(null);
   const imageOperationRef = useRef({ busy: false, generation: 0 });
 
@@ -660,12 +702,13 @@ function Studio() {
       name: projectName.trim() || "나의 픽셀 펫",
       activeKitId: `${activeExampleId || "custom"}:${activeStyleId || "default"}`,
       frames,
-      fps,
+      fps: motionFps.idle,
+      motionFps,
       scale,
       createdAt,
       updatedAt: new Date().toISOString(),
     }),
-    [activeExampleId, activeStyleId, createdAt, fps, frames, projectName, scale],
+    [activeExampleId, activeStyleId, createdAt, frames, motionFps, projectName, scale],
   );
 
   const importedCount = useMemo(
@@ -685,16 +728,17 @@ function Studio() {
     () => frames[activeMotion].filter((frame): frame is FrameAsset => frame !== null),
     [activeMotion, frames],
   );
+  const activeFps = motionFps[activeMotion];
 
   useEffect(() => setPreviewFrameIndex(0), [activeMotion, activePreviewFrames.length]);
   useEffect(() => {
     if (!playing || activePreviewFrames.length <= 1) return undefined;
     const timer = window.setInterval(
       () => setPreviewFrameIndex((index) => (index + 1) % activePreviewFrames.length),
-      Math.max(50, 1000 / fps),
+      Math.max(50, 1000 / activeFps),
     );
     return () => window.clearInterval(timer);
-  }, [activePreviewFrames.length, fps, playing]);
+  }, [activeFps, activePreviewFrames.length, playing]);
 
   const selectedAsset = selectedFrame
     ? frames[selectedFrame.state]?.[selectedFrame.index] ?? null
@@ -729,7 +773,9 @@ function Studio() {
     }
   };
 
-  const beginImageOperation = (action: "quick-pet" | "remove-background"): number | null => {
+  const beginImageOperation = (
+    action: "quick-pet" | "remove-background" | "process-motion-frames",
+  ): number | null => {
     if (imageOperationRef.current.busy || busyAction) return null;
     imageOperationRef.current.busy = true;
     imageOperationRef.current.generation += 1;
@@ -780,6 +826,120 @@ function Studio() {
       notify("error", getErrorMessage(error));
     } finally {
       setBusyAction(null);
+    }
+  };
+
+  const importPoseSheet = async (state: AnimationState, file: File) => {
+    if (busyAction || imageOperationRef.current.busy) {
+      notify("info", "현재 이미지 작업이 끝난 뒤 다시 시도해 주세요.");
+      return;
+    }
+    const frameCount = frames[state].length;
+    setBusyAction("import-pose-sheet");
+    try {
+      const imported = await createPoseSheetFrameAssets(file, frameCount);
+      setFrames((current) => ({ ...current, [state]: imported }));
+      setActiveMotion(state);
+      setSelectedFrame({ state, index: 0 });
+      setMotionBatch({
+        phase: "idle",
+        progress: 0,
+        detail: `${file.name}을 왼쪽부터 ${frameCount}개 프레임으로 나눴습니다. 이제 한 번에 정리하세요.`,
+      });
+      notify(
+        "success",
+        `${MOTION_META[state].label} 포즈 시트를 왼쪽부터 ${frameCount}개 프레임으로 가져왔습니다.`,
+      );
+    } catch (error) {
+      notify("error", `포즈 시트 가져오기 실패: ${getErrorMessage(error)}`);
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const processActiveMotionFrames = async () => {
+    const targetMotion = activeMotion;
+    const targets = frames[targetMotion]
+      .map((frame, index) => (frame ? { frame, index } : null))
+      .filter((item): item is { frame: FrameAsset; index: number } => item !== null);
+    if (!targets.length) {
+      notify("info", "먼저 이 동작에 AI 포즈 이미지를 가져와 주세요.");
+      return;
+    }
+    const operationGeneration = beginImageOperation("process-motion-frames");
+    if (operationGeneration === null) return;
+    setMotionBatch({
+      phase: "processing",
+      progress: 1,
+      detail: `${MOTION_META[targetMotion].label} 프레임의 배경과 위치를 확인하는 중…`,
+    });
+
+    try {
+      const result = await processMotionFrames({
+        frames: targets.map((item) => item.frame),
+        canvas: parseCanvasSize(activeStyle?.canvas),
+        onProgress: ({ phase, frameName, ratio }) => {
+          if (!isCurrentImageOperation(operationGeneration)) return;
+          setMotionBatch({
+            phase: "processing",
+            progress: Math.max(1, Math.round(ratio * 100)),
+            detail:
+              phase === "removing"
+                ? `${frameName}: 일반 배경을 로컬 AI로 제거하는 중…`
+                : phase === "aligning"
+                  ? "모든 포즈를 하나의 공통 좌표와 크기로 맞추는 중…"
+                  : `${frameName}: 투명 배경과 단색 크로마를 확인하는 중…`,
+          });
+        },
+      });
+      if (!isCurrentImageOperation(operationGeneration)) return;
+      setFrames((current) => {
+        const nextMotion = [...current[targetMotion]];
+        targets.forEach((target, resultIndex) => {
+          if (nextMotion[target.index]?.id === target.frame.id) {
+            nextMotion[target.index] = result.frames[resultIndex];
+          }
+        });
+        return { ...current, [targetMotion]: nextMotion };
+      });
+      setMotionFps((current) => ({
+        ...current,
+        [targetMotion]: MOTION_META[targetMotion].fps,
+      }));
+      const cleanupSummary = [
+        result.flatChromaCount
+          ? `단색 배경 ${result.flatChromaCount}장 직접 정리`
+          : null,
+        result.aiRemovalCount
+          ? `일반 배경 ${result.aiRemovalCount}장 AI 제거`
+          : null,
+        result.existingCutoutCount
+          ? `기존 투명 PNG ${result.existingCutoutCount}장 유지`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      setMotionBatch({
+        phase: "success",
+        progress: 100,
+        detail: `${result.frames.length}장을 ${result.layout.targetCanvas.width} × ${result.layout.targetCanvas.height} 공통 좌표로 정렬했습니다. ${cleanupSummary}`,
+      });
+      setRemoval({
+        phase: "success",
+        progress: 100,
+        detail: `${MOTION_META[targetMotion].label} 프레임 전체의 배경 제거와 공통 정렬이 끝났습니다.`,
+      });
+      notify(
+        "success",
+        `${MOTION_META[targetMotion].label} 프레임을 흔들리지 않는 공통 캔버스로 정리했습니다.`,
+      );
+    } catch (error) {
+      if (!isCurrentImageOperation(operationGeneration)) return;
+      const message = getErrorMessage(error);
+      setMotionBatch({ phase: "error", progress: 0, detail: message });
+      notify("error", `프레임 일괄 정리 실패: ${message}`);
+    } finally {
+      finishImageOperation(operationGeneration);
     }
   };
 
@@ -863,6 +1023,7 @@ function Studio() {
       });
       if (!isCurrentImageOperation(operationGeneration)) return;
       setFrames((current) => ({ ...current, idle: result.frames }));
+      setMotionFps((current) => ({ ...current, idle: QUICK_PET_FPS }));
       setActiveMotion("idle");
       setSelectedFrame({ state: "idle", index: 0 });
       setRemoval({
@@ -878,7 +1039,7 @@ function Studio() {
       setQuickPet({
         phase: "success",
         progress: 100,
-        detail: `${result.canvas.width} × ${result.canvas.height} 투명 프레임 4개가 준비됐습니다.`,
+        detail: `${result.canvas.width} × ${result.canvas.height} 투명 프레임 4개를 ${QUICK_PET_FPS} FPS 왜곡 없는 대기 루프로 준비했습니다.`,
         fileName: file.name,
         backgroundRemoval: alreadyTransparent ? "skipped" : "performed",
         chromaCleanup: result.chromaCleanup.applied ? "applied" : "not-needed",
@@ -1000,7 +1161,7 @@ function Studio() {
     const [loadedExampleId, loadedStyleId] = loaded.activeKitId.split(":");
     setProjectName(loaded.name);
     setFrames(normalizeFrames(loaded.frames));
-    setFps(Math.min(16, Math.max(2, loaded.fps)));
+    setMotionFps(normalizeMotionFps(loaded));
     setScale(Math.min(6, Math.max(0.25, loaded.scale)));
     setCreatedAt(loaded.createdAt);
     if (loadedExampleId) setActiveExampleId(loadedExampleId);
@@ -1448,23 +1609,57 @@ function Studio() {
             <SectionHeading
               eyebrow="02 · IMPORT FRAMES"
               title="만든 이미지를 동작별로 채우세요"
-              description="파일을 슬롯에 끌어 놓거나 눌러서 선택하세요. 여러 장을 한 번에 가져오면 빈 슬롯 순서대로 들어갑니다."
+              description="가장 쉬운 방법은 포즈를 한 줄로 나란히 만든 시트 한 장을 가져오는 것입니다. 개별 이미지도 슬롯에 놓을 수 있어요."
               aside={<span className="counter-pill"><strong>{importedCount}</strong> FRAME{importedCount === 1 ? "" : "S"}</span>}
             />
             <MotionTabs active={activeMotion} frames={frames} onChange={setActiveMotion} />
             <article className="panel frames-panel">
               <div className="frames-panel__heading">
-                <div>
+                <div className="frames-panel__copy">
                   <span>{MOTION_META[activeMotion].shortLabel}</span>
                   <h2>{MOTION_META[activeMotion].label} 프레임</h2>
                   <p>{MOTION_META[activeMotion].description}</p>
                 </div>
-                <button className="button button--soft" disabled={Boolean(busyAction)} onClick={() => bulkInputRef.current?.click()} type="button">
-                  <Icon name="upload" /> 여러 장 가져오기
-                </button>
+                <div className="frames-panel__actions">
+                  <button
+                    className="button button--soft"
+                    data-testid="pose-sheet-import"
+                    disabled={Boolean(busyAction)}
+                    onClick={() => poseSheetInputRef.current?.click()}
+                    type="button"
+                  >
+                    <Icon name="layers" /> 포즈 시트 한 장 가져오기
+                  </button>
+                  <button className="button button--soft" disabled={Boolean(busyAction)} onClick={() => bulkInputRef.current?.click()} type="button">
+                    <Icon name="upload" /> 개별 포즈 여러 장 가져오기
+                  </button>
+                  <button
+                    className="button button--primary"
+                    data-testid="process-motion-frames"
+                    disabled={Boolean(busyAction) || activePreviewFrames.length === 0}
+                    onClick={() => void processActiveMotionFrames()}
+                    type="button"
+                  >
+                    <Icon name="sparkles" /> 이 동작 한 번에 정리
+                  </button>
+                </div>
                 <input
                   accept="image/png,image/jpeg,image/webp"
                   className="visually-hidden"
+                  data-testid="pose-sheet-input"
+                  disabled={Boolean(busyAction)}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    const file = event.target.files?.[0];
+                    if (file) void importPoseSheet(activeMotion, file);
+                    event.target.value = "";
+                  }}
+                  ref={poseSheetInputRef}
+                  type="file"
+                />
+                <input
+                  accept="image/png,image/jpeg,image/webp"
+                  className="visually-hidden"
+                  data-testid="bulk-motion-frames-input"
                   disabled={Boolean(busyAction)}
                   multiple
                   onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -1479,6 +1674,30 @@ function Studio() {
                   ref={bulkInputRef}
                   type="file"
                 />
+              </div>
+              <div
+                className={`motion-batch-status motion-batch-status--${motionBatch.phase}`}
+                data-testid="motion-frame-processing-status"
+                role="status"
+              >
+                <Icon name={motionBatch.phase === "error" ? "warning" : "layers"} />
+                <div>
+                  <strong>
+                    {motionBatch.phase === "processing"
+                      ? "프레임 전체를 처리하고 있어요"
+                      : motionBatch.phase === "success"
+                        ? "공통 좌표 정리 완료"
+                        : motionBatch.phase === "error"
+                          ? "일괄 정리를 완료하지 못했어요"
+                          : "초보자 권장: 포즈 시트를 가져온 뒤 ‘이 동작 한 번에 정리’를 누르세요"}
+                  </strong>
+                  <span>{motionBatch.detail}</span>
+                  {motionBatch.phase === "processing" && (
+                    <i aria-label={`처리 진행률 ${motionBatch.progress}%`}>
+                      <b style={{ width: `${motionBatch.progress}%` }} />
+                    </i>
+                  )}
+                </div>
               </div>
               <div className="frame-grid">
                 {frames[activeMotion].map((frame, index) => (
@@ -1496,8 +1715,8 @@ function Studio() {
                 ))}
               </div>
               <div className="frames-panel__tips">
-                <span><Icon name="layers" /> 같은 캔버스 크기와 발 기준선을 유지하면 흔들림이 줄어요.</span>
-                <span>최대 20MB · 4MP · 한 변 4096px · PNG 권장</span>
+                <span><Icon name="layers" /> 개별 프레임을 따로 자르지 않고 전체 포즈의 공통 범위로 맞춰 흔들림을 줄여요.</span>
+                <span>포즈 시트: 가로 {frames[activeMotion].length}칸 같은 너비 · 전체/각 칸 최대 20MB · 4MP · 4096px</span>
               </div>
             </article>
             <div className="section-footer">
@@ -1714,7 +1933,7 @@ function Studio() {
               eyebrow="04 · ANIMATION PREVIEW"
               title="이제 살아 움직이는지 확인해 볼까요?"
               description="동작별 루프와 프레임 속도, 실제 데스크톱에서 보일 픽셀 배율을 조정하세요."
-              aside={<span className="counter-pill"><strong>{fps}</strong> FPS</span>}
+              aside={<span className="counter-pill"><strong>{activeFps}</strong> FPS</span>}
             />
             <MotionTabs active={activeMotion} frames={frames} onChange={setActiveMotion} />
             <div className="preview-layout">
@@ -1723,7 +1942,23 @@ function Studio() {
                   <span><i className="status-dot" /> LIVE PREVIEW</span>
                   <small>{MOTION_META[activeMotion].shortLabel} · {activePreviewFrames.length} FRAMES</small>
                 </div>
-                <div className={`preview-stage checkerboard preview-motion--${activeMotion}`} data-testid="animation-preview">
+                <div
+                  className={`preview-stage checkerboard${
+                    playing && activePreviewFrames.length === 1
+                      ? ` preview-motion--${activeMotion}`
+                      : ""
+                  }`}
+                  data-motion-driver={
+                    !playing
+                      ? "paused"
+                      : activePreviewFrames.length > 1
+                        ? "frames"
+                        : activePreviewFrames.length === 1
+                          ? "css"
+                          : "none"
+                  }
+                  data-testid="animation-preview"
+                >
                   {activePreviewFrames.length ? (
                     <img
                       alt={`${MOTION_META[activeMotion].label} 애니메이션 미리보기`}
@@ -1763,8 +1998,20 @@ function Studio() {
               <aside className="panel preview-controls">
                 <div className="panel__heading"><div><span className="panel__step">PLAYBACK</span><h2>재생 설정</h2></div></div>
                 <label className="range-control">
-                  <span><strong>프레임 속도</strong><em>{fps} FPS</em></span>
-                  <input aria-label="프레임 속도" max="16" min="2" onChange={(event) => setFps(Number(event.target.value))} step="1" type="range" value={fps} />
+                  <span><strong>{MOTION_META[activeMotion].label} 프레임 속도</strong><em>{activeFps} FPS</em></span>
+                  <input
+                    aria-label={`${MOTION_META[activeMotion].label} 프레임 속도`}
+                    max="16"
+                    min="2"
+                    onChange={(event) =>
+                      setMotionFps((current) => ({
+                        ...current,
+                        [activeMotion]: Number(event.target.value),
+                      }))}
+                    step="1"
+                    type="range"
+                    value={activeFps}
+                  />
                   <small><span>느리게</span><span>빠르게</span></small>
                 </label>
                 <label className="range-control">
@@ -1779,7 +2026,7 @@ function Studio() {
                 <div className="preview-summary">
                   <p><span>캔버스</span><strong>{activePreviewFrames[0] ? `${activePreviewFrames[0].width} × ${activePreviewFrames[0].height}` : "—"}</strong></p>
                   <p><span>투명 프레임</span><strong>{activePreviewFrames.filter((frame) => frame.backgroundRemoved).length} / {activePreviewFrames.length}</strong></p>
-                  <p><span>루프 시간</span><strong>{activePreviewFrames.length ? `${(activePreviewFrames.length / fps).toFixed(2)}s` : "—"}</strong></p>
+                  <p><span>루프 시간</span><strong>{activePreviewFrames.length ? `${(activePreviewFrames.length / activeFps).toFixed(2)}s` : "—"}</strong></p>
                 </div>
               </aside>
             </div>
@@ -1810,7 +2057,7 @@ function Studio() {
               <div className="publish-hero__copy">
                 <span>YOUR NEW COMPANION</span>
                 <h2>{project.name}</h2>
-                <p>{importedCount}개 프레임 · {fps} FPS · {scale}× 렌더링</p>
+                <p>{importedCount}개 프레임 · 동작별 FPS · {scale}× 렌더링</p>
                 <div>
                   {petState?.status === "running" ? (
                     <button className="button button--danger button--large" disabled={busyAction === "stop"} onClick={stopPet} type="button"><Icon name="stop" /> 데스크톱 펫 종료</button>

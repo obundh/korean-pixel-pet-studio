@@ -49,10 +49,20 @@ export interface PixelPetProject {
   name: string;
   activeKitId: string;
   frames: PixelPetFrameMap;
+  /** Legacy/default playback rate retained for version-1 project compatibility. */
   fps: number;
+  /** New projects persist an independent playback rate for every motion. */
+  motionFps?: Record<PetAnimationName, number>;
   scale: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export function getPixelPetMotionFps(
+  project: PixelPetProject,
+  animation: PetAnimationName,
+): number {
+  return project.motionFps?.[animation] ?? project.fps;
 }
 
 export function createEmptyFrameMap(): PixelPetFrameMap {

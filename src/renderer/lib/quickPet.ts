@@ -21,11 +21,9 @@ export type FitPlacement = {
 };
 
 export type IdleVariant = {
-  id: "neutral" | "up" | "squash" | "exhale";
+  id: "neutral" | "rise" | "hold" | "settle";
   label: string;
   translateY: number;
-  widthDelta: number;
-  heightDelta: number;
 };
 
 export type IdleVariantPlacement = {
@@ -63,35 +61,28 @@ export type FlatChromaDataUrlResult = {
 
 const MIN_CANVAS_EDGE = 16;
 const MAX_CANVAS_EDGE = 256;
+export const QUICK_PET_FPS = 4;
 
 export const IDLE_VARIANTS: readonly IdleVariant[] = [
   {
     id: "neutral",
     label: "neutral",
     translateY: 0,
-    widthDelta: 0,
-    heightDelta: 0,
   },
   {
-    id: "up",
-    label: "inhale-up",
+    id: "rise",
+    label: "rise-1px",
     translateY: -1,
-    widthDelta: 0,
-    heightDelta: 0,
   },
   {
-    id: "squash",
-    label: "soft-squash",
-    translateY: 0,
-    widthDelta: 2,
-    heightDelta: -2,
+    id: "hold",
+    label: "hold-1px",
+    translateY: -1,
   },
   {
-    id: "exhale",
-    label: "exhale",
+    id: "settle",
+    label: "settle",
     translateY: 0,
-    widthDelta: 0,
-    heightDelta: -1,
   },
 ] as const;
 
@@ -301,6 +292,399 @@ export function colorDistance(red: number, green: number, blue: number, key: Rgb
   return Math.hypot(red - key.red, green - key.green, blue - key.blue);
 }
 
+const rgbToHsv = (red: number, green: number, blue: number) => {
+  const r = red / 255;
+  const g = green / 255;
+  const b = blue / 255;
+  const maximum = Math.max(r, g, b);
+  const minimum = Math.min(r, g, b);
+  const delta = maximum - minimum;
+  let hue = 0;
+  if (delta > 0) {
+    if (maximum === r) hue = 60 * (((g - b) / delta) % 6);
+    else if (maximum === g) hue = 60 * ((b - r) / delta + 2);
+    else hue = 60 * ((r - g) / delta + 4);
+  }
+  if (hue < 0) hue += 360;
+  return {
+    hue,
+    saturation: maximum > 0 ? delta / maximum : 0,
+    value: maximum,
+  };
+};
+
+const hueDistance = (left: number, right: number): number => {
+  const distance = Math.abs(left - right);
+  return Math.min(distance, 360 - distance);
+};
+
+const chromaDirectionSimilarity = (
+  red: number,
+  green: number,
+  blue: number,
+  key: RgbColor,
+): number => {
+  const pixelMinimum = Math.min(red, green, blue);
+  const keyMinimum = Math.min(key.red, key.green, key.blue);
+  const pixelVector = [red - pixelMinimum, green - pixelMinimum, blue - pixelMinimum];
+  const keyVector = [
+    key.red - keyMinimum,
+    key.green - keyMinimum,
+    key.blue - keyMinimum,
+  ];
+  const pixelLength = Math.hypot(...pixelVector);
+  const keyLength = Math.hypot(...keyVector);
+  if (pixelLength === 0 || keyLength === 0) return 0;
+  return (
+    (pixelVector[0] * keyVector[0] +
+      pixelVector[1] * keyVector[1] +
+      pixelVector[2] * keyVector[2]) /
+    (pixelLength * keyLength)
+  );
+};
+
+const isChromaLike = (red: number, green: number, blue: number, key: RgbColor): boolean => {
+  if (colorDistance(red, green, blue, key) < 80) return true;
+  const keyHsv = rgbToHsv(key.red, key.green, key.blue);
+  const pixel = rgbToHsv(red, green, blue);
+  return (
+    keyHsv.saturation >= 0.5 &&
+    pixel.saturation >= Math.max(0.35, keyHsv.saturation * 0.45) &&
+    pixel.value >= 0.08 &&
+    hueDistance(pixel.hue, keyHsv.hue) <= 18
+  );
+};
+
+const isExtendedChromaLike = (
+  red: number,
+  green: number,
+  blue: number,
+  key: RgbColor,
+): boolean => {
+  const keyHsv = rgbToHsv(key.red, key.green, key.blue);
+  const pixel = rgbToHsv(red, green, blue);
+  return (
+    keyHsv.saturation >= 0.5 &&
+    pixel.saturation >= Math.max(0.35, keyHsv.saturation * 0.45) &&
+    pixel.value >= 0.08 &&
+    hueDistance(pixel.hue, keyHsv.hue) <= 52 &&
+    chromaDirectionSimilarity(red, green, blue, key) >= 0.86
+  );
+};
+
+const isEvidenceChromaLike = (
+  red: number,
+  green: number,
+  blue: number,
+  key: RgbColor,
+): boolean => {
+  const keyHsv = rgbToHsv(key.red, key.green, key.blue);
+  const pixel = rgbToHsv(red, green, blue);
+  return (
+    keyHsv.saturation >= 0.5 &&
+    pixel.saturation >= Math.max(0.2, keyHsv.saturation * 0.2) &&
+    pixel.value >= 0.08 &&
+    hueDistance(pixel.hue, keyHsv.hue) <= 65 &&
+    chromaDirectionSimilarity(red, green, blue, key) >= 0.81
+  );
+};
+
+const hasNearbyKeyEvidence = (
+  rgba: Uint8ClampedArray,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  key: RgbColor,
+  radius = 2,
+): boolean => {
+  for (let nextY = Math.max(0, y - radius); nextY <= Math.min(height - 1, y + radius); nextY += 1) {
+    for (
+      let nextX = Math.max(0, x - radius);
+      nextX <= Math.min(width - 1, x + radius);
+      nextX += 1
+    ) {
+      const index = (nextY * width + nextX) * 4;
+      if (
+        rgba[index + 3] > 8 &&
+        colorDistance(rgba[index], rgba[index + 1], rgba[index + 2], key) <= 72
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+const hasKeyContaminationEvidence = (
+  evidenceRgba: Uint8ClampedArray,
+  cleanedRgba: Uint8ClampedArray,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  key: RgbColor,
+): boolean => {
+  if (!hasNearbyKeyEvidence(evidenceRgba, x, y, width, height, key)) return false;
+  const index = (y * width + x) * 4;
+  const evidenceDistance = colorDistance(
+    evidenceRgba[index],
+    evidenceRgba[index + 1],
+    evidenceRgba[index + 2],
+    key,
+  );
+  const cleanedDistance = colorDistance(
+    cleanedRgba[index],
+    cleanedRgba[index + 1],
+    cleanedRgba[index + 2],
+    key,
+  );
+  return evidenceDistance <= 150 || evidenceDistance + 18 < cleanedDistance;
+};
+
+const hasSafePaletteWitness = (
+  evidenceRgba: Uint8ClampedArray,
+  cleanedRgba: Uint8ClampedArray,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  key: RgbColor,
+  // Only immediate continuity is evidence that a despilled pixel belongs to
+  // this local outline. A distant matching color may be an unrelated detail.
+  radius = Math.min(3, Math.max(width, height)),
+): boolean => {
+  const candidateIndex = (y * width + x) * 4;
+  for (
+    let nextY = Math.max(0, y - radius);
+    nextY <= Math.min(height - 1, y + radius);
+    nextY += 1
+  ) {
+    for (
+      let nextX = Math.max(0, x - radius);
+      nextX <= Math.min(width - 1, x + radius);
+      nextX += 1
+    ) {
+      if (nextX === x && nextY === y) continue;
+      const nextIndex = (nextY * width + nextX) * 4;
+      if (cleanedRgba[nextIndex + 3] <= 8 || evidenceRgba[nextIndex + 3] <= 8) continue;
+      if (
+        Math.hypot(
+          cleanedRgba[nextIndex] - cleanedRgba[candidateIndex],
+          cleanedRgba[nextIndex + 1] - cleanedRgba[candidateIndex + 1],
+          cleanedRgba[nextIndex + 2] - cleanedRgba[candidateIndex + 2],
+        ) > 12
+      ) {
+        continue;
+      }
+      if (
+        Math.hypot(
+          evidenceRgba[nextIndex] - cleanedRgba[nextIndex],
+          evidenceRgba[nextIndex + 1] - cleanedRgba[nextIndex + 1],
+          evidenceRgba[nextIndex + 2] - cleanedRgba[nextIndex + 2],
+        ) > 16
+      ) {
+        continue;
+      }
+      if (
+        !hasKeyContaminationEvidence(
+          evidenceRgba,
+          cleanedRgba,
+          nextX,
+          nextY,
+          width,
+          height,
+          key,
+        )
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+/**
+ * Generated chroma sheets can leave a dark purple/red/green outline whose hue
+ * has moved too far from the bright key for a simple RGB threshold. Only
+ * key-like pixels connected to the transparent exterior are repaired. Their
+ * color is borrowed from the nearest safe foreground pixel, preserving the
+ * silhouette and leaving similarly colored interior details untouched.
+ */
+export function repairBoundaryChromaFringe(
+  rgba: Uint8ClampedArray,
+  width: number,
+  height: number,
+  key: RgbColor,
+  evidenceRgba?: Uint8ClampedArray,
+): Uint8ClampedArray {
+  if (
+    !Number.isInteger(width) ||
+    width <= 0 ||
+    !Number.isInteger(height) ||
+    height <= 0 ||
+    rgba.length !== width * height * 4
+  ) {
+    throw new Error("크로마 경계 보정 이미지의 크기가 올바르지 않습니다.");
+  }
+  if (evidenceRgba && evidenceRgba.length !== rgba.length) {
+    throw new Error("크로마 경계 증거 이미지의 크기가 서로 다릅니다.");
+  }
+
+  const pixels = width * height;
+  const source = new Uint8ClampedArray(rgba);
+  const suspicious = new Uint8Array(pixels);
+  const evidenceBacked = new Uint8Array(pixels);
+  const repair = new Uint8Array(pixels);
+  const depths = new Int8Array(pixels);
+  depths.fill(-1);
+  const queue = new Int32Array(pixels);
+  let head = 0;
+  let tail = 0;
+  const isVisible = (pixel: number) => source[pixel * 4 + 3] > 8;
+  const isExteriorBoundary = (pixel: number): boolean => {
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+      for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+        if (offsetX === 0 && offsetY === 0) continue;
+        const nextX = x + offsetX;
+        const nextY = y + offsetY;
+        if (nextX < 0 || nextY < 0 || nextX >= width || nextY >= height) return true;
+        if (!isVisible(nextY * width + nextX)) return true;
+      }
+    }
+    return false;
+  };
+
+  for (let pixel = 0; pixel < pixels; pixel += 1) {
+    if (!isVisible(pixel)) continue;
+    const index = pixel * 4;
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    const hasEvidence =
+      evidenceRgba &&
+      hasKeyContaminationEvidence(
+        evidenceRgba,
+        source,
+        x,
+        y,
+        width,
+        height,
+        key,
+      );
+    if (hasEvidence) evidenceBacked[pixel] = 1;
+    const hasSafeWitness =
+      hasEvidence &&
+      hasSafePaletteWitness(
+        evidenceRgba,
+        source,
+        x,
+        y,
+        width,
+        height,
+        key,
+      );
+    if (
+      isExtendedChromaLike(source[index], source[index + 1], source[index + 2], key) ||
+      (hasEvidence &&
+        !hasSafeWitness &&
+        isEvidenceChromaLike(source[index], source[index + 1], source[index + 2], key))
+    ) {
+      suspicious[pixel] = 1;
+    }
+  }
+  for (let pixel = 0; pixel < pixels; pixel += 1) {
+    if (!suspicious[pixel]) continue;
+    if (!isExteriorBoundary(pixel) && !evidenceBacked[pixel]) continue;
+    repair[pixel] = 1;
+    depths[pixel] = 0;
+    queue[tail] = pixel;
+    tail += 1;
+  }
+
+  const maximumDepth = 4;
+  while (head < tail) {
+    const pixel = queue[head];
+    head += 1;
+    if (depths[pixel] >= maximumDepth) continue;
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+      for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+        if (offsetX === 0 && offsetY === 0) continue;
+        const nextX = x + offsetX;
+        const nextY = y + offsetY;
+        if (nextX < 0 || nextY < 0 || nextX >= width || nextY >= height) continue;
+        const next = nextY * width + nextX;
+        if (!suspicious[next] || repair[next]) continue;
+        repair[next] = 1;
+        depths[next] = depths[pixel] + 1;
+        queue[tail] = next;
+        tail += 1;
+      }
+    }
+  }
+
+  const output = new Uint8ClampedArray(source);
+  const maximumRadius = 12;
+  for (let pixel = 0; pixel < pixels; pixel += 1) {
+    if (!repair[pixel]) continue;
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    const index = pixel * 4;
+    let bestPixel = -1;
+    let bestScore = Number.POSITIVE_INFINITY;
+    for (let radius = 1; radius <= maximumRadius; radius += 1) {
+      const minimumX = Math.max(0, x - radius);
+      const maximumX = Math.min(width - 1, x + radius);
+      const minimumY = Math.max(0, y - radius);
+      const maximumY = Math.min(height - 1, y + radius);
+      for (let nextY = minimumY; nextY <= maximumY; nextY += 1) {
+        for (let nextX = minimumX; nextX <= maximumX; nextX += 1) {
+          if (
+            nextX !== minimumX &&
+            nextX !== maximumX &&
+            nextY !== minimumY &&
+            nextY !== maximumY
+          ) {
+            continue;
+          }
+          const next = nextY * width + nextX;
+          if (!isVisible(next) || repair[next] || suspicious[next]) continue;
+          const nextIndex = next * 4;
+          const spatialDistance = Math.hypot(nextX - x, nextY - y);
+          const colorDifference = Math.hypot(
+            source[nextIndex] - source[index],
+            source[nextIndex + 1] - source[index + 1],
+            source[nextIndex + 2] - source[index + 2],
+          );
+          const score = spatialDistance * 18 + colorDifference;
+          if (score < bestScore) {
+            bestScore = score;
+            bestPixel = next;
+          }
+        }
+      }
+      if (bestPixel >= 0 && radius >= 3) break;
+    }
+
+    if (bestPixel < 0) {
+      output[index] = 0;
+      output[index + 1] = 0;
+      output[index + 2] = 0;
+      output[index + 3] = 0;
+      continue;
+    }
+    const bestIndex = bestPixel * 4;
+    output[index] = source[bestIndex];
+    output[index + 1] = source[bestIndex + 1];
+    output[index + 2] = source[bestIndex + 2];
+    output[index + 3] = 255;
+  }
+  return output;
+}
+
 /** Detects the deliberately flat, saturated key backgrounds used by PixelPet prompts. */
 export function detectFlatChromaKey(
   rgba: Uint8ClampedArray,
@@ -386,6 +770,8 @@ export function cleanupFlatChroma(
   original: Uint8ClampedArray,
   cleaned: Uint8ClampedArray,
   key: RgbColor,
+  width?: number,
+  height?: number,
 ): Uint8ClampedArray {
   if (original.length !== cleaned.length || original.length % 4 !== 0) {
     throw new Error("크로마 정리 이미지의 크기가 서로 다릅니다.");
@@ -427,9 +813,13 @@ export function cleanupFlatChroma(
       output[index + 2] = original[index + 2];
     }
 
-    // A surviving key-dominant pixel is safer to discard than to leave as a
-    // bright halo around a 64 px sprite.
-    if (colorDistance(output[index], output[index + 1], output[index + 2], key) < 80) {
+    // Chroma spill often becomes much darker than the original key, making an
+    // RGB-only threshold miss a visible purple/green rim. Match the quality
+    // gate's hue/saturation/value rule before hardening the final alpha.
+    if (
+      isChromaLike(output[index], output[index + 1], output[index + 2], key) &&
+      (!width || !height)
+    ) {
       output[index] = 0;
       output[index + 1] = 0;
       output[index + 2] = 0;
@@ -438,7 +828,9 @@ export function cleanupFlatChroma(
       output[index + 3] = 255;
     }
   }
-  return output;
+  return width && height
+    ? repairBoundaryChromaFringe(output, width, height, key, original)
+    : output;
 }
 
 export function calculateBottomCenterFit(
@@ -472,13 +864,11 @@ export function idleVariantPlacement(
   canvas: CanvasSize,
   variant: IdleVariant,
 ): IdleVariantPlacement {
-  const width = Math.max(1, canvas.width + variant.widthDelta);
-  const height = Math.max(1, canvas.height + variant.heightDelta);
   return {
-    x: Math.round((canvas.width - width) / 2),
-    y: canvas.height - height + variant.translateY,
-    width,
-    height,
+    x: 0,
+    y: Math.round(variant.translateY),
+    width: canvas.width,
+    height: canvas.height,
   };
 }
 
@@ -584,6 +974,8 @@ export async function postprocessFlatChromaDataUrl(
     originalPixels,
     canvasPixels(cleanedCanvas),
     detectedKey.color,
+    size.width,
+    size.height,
   );
   replaceCanvasPixels(cleanedCanvas, cleanedPixels);
   return {
@@ -621,7 +1013,10 @@ async function transformedDataUrl(
   const canvas = createCanvas(target);
   const context = getContext(canvas);
   const placement = idleVariantPlacement(target, variant);
-  context.drawImage(source, placement.x, placement.y, placement.width, placement.height);
+  // A one-image quick pet cannot synthesize real limb or breathing poses.
+  // Preserve every source pixel and use only a one-pixel, integer translation
+  // so the mascot never stretches, squashes, or gains subpixel blur.
+  context.drawImage(source, placement.x, placement.y);
   return canvasToPngDataUrl(canvas);
 }
 
@@ -629,7 +1024,8 @@ async function transformedDataUrl(
  * Creates a small, identity-preserving idle loop from one cleaned mascot.
  * The cleaned image determines the crop. That exact crop is applied to both
  * the original and cleaned images so the manual "restore" action remains
- * geometrically aligned with every generated frame.
+ * geometrically aligned with every generated frame. Frames retain the exact
+ * normalized dimensions and differ only by integer translation.
  */
 export async function createQuickPetFrames(options: QuickPetOptions): Promise<QuickPetResult> {
   const [originalImage, cleanedImage] = await Promise.all([
@@ -652,7 +1048,13 @@ export async function createQuickPetFrames(options: QuickPetOptions): Promise<Qu
     ? null
     : detectFlatChromaKey(originalPixels, cleanedSize.width, cleanedSize.height);
   if (chromaKey) {
-    cleanedPixels = cleanupFlatChroma(originalPixels, cleanedPixels, chromaKey.color);
+    cleanedPixels = cleanupFlatChroma(
+      originalPixels,
+      cleanedPixels,
+      chromaKey.color,
+      cleanedSize.width,
+      cleanedSize.height,
+    );
     replaceCanvasPixels(cleanedCanvas, cleanedPixels);
   }
   const sourceBounds = findRobustAlphaBounds(
@@ -668,6 +1070,18 @@ export async function createQuickPetFrames(options: QuickPetOptions): Promise<Qu
   const placement = calculateBottomCenterFit(sourceBounds, canvas, padding);
   const normalizedOriginal = normalizedImage(originalCanvas, placement, canvas);
   const normalizedCleaned = normalizedImage(cleanedCanvas, placement, canvas);
+  if (chromaKey) {
+    replaceCanvasPixels(
+      normalizedCleaned,
+      repairBoundaryChromaFringe(
+        canvasPixels(normalizedCleaned),
+        canvas.width,
+        canvas.height,
+        chromaKey.color,
+        canvasPixels(normalizedOriginal),
+      ),
+    );
+  }
   const now = options.now ?? (() => new Date().toISOString());
   const makeId =
     options.makeId ??

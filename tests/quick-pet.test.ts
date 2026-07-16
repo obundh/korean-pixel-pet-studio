@@ -11,6 +11,8 @@ import {
   hasMeaningfulTransparency,
   idleVariantPlacement,
   parseCanvasSize,
+  QUICK_PET_FPS,
+  repairBoundaryChromaFringe,
 } from "../src/renderer/lib/quickPet";
 
 describe("quick pet geometry", () => {
@@ -116,25 +118,24 @@ describe("quick pet geometry", () => {
     });
   });
 
-  it("defines four subtle bottom-anchored idle placements", () => {
+  it("defines a slow four-frame idle loop without resizing the canvas", () => {
+    expect(QUICK_PET_FPS).toBe(4);
     expect(IDLE_VARIANTS.map((variant) => variant.id)).toEqual([
       "neutral",
-      "up",
-      "squash",
-      "exhale",
+      "rise",
+      "hold",
+      "settle",
     ]);
-    expect(idleVariantPlacement({ width: 64, height: 64 }, IDLE_VARIANTS[0])).toEqual({
-      x: 0,
-      y: 0,
-      width: 64,
-      height: 64,
-    });
-    expect(idleVariantPlacement({ width: 64, height: 64 }, IDLE_VARIANTS[2])).toEqual({
-      x: -1,
-      y: 2,
-      width: 66,
-      height: 62,
-    });
+    expect(
+      IDLE_VARIANTS.map((variant) =>
+        idleVariantPlacement({ width: 64, height: 64 }, variant),
+      ),
+    ).toEqual([
+      { x: 0, y: 0, width: 64, height: 64 },
+      { x: 0, y: -1, width: 64, height: 64 },
+      { x: 0, y: -1, width: 64, height: 64 },
+      { x: 0, y: 0, width: 64, height: 64 },
+    ]);
   });
 
   it("detects only a uniform high-saturation border as a flat chroma key", () => {
@@ -211,5 +212,171 @@ describe("quick pet geometry", () => {
     expect(new Set([result[3], result[7], result[11], result[15], result[19]])).toEqual(
       new Set([0, 255]),
     );
+  });
+
+  it("discards dark hue-preserving chroma spill that RGB distance misses", () => {
+    const key = { red: 255, green: 0, blue: 245 };
+    const original = new Uint8ClampedArray([
+      255, 0, 245, 255,
+      109, 8, 103, 255,
+      235, 158, 52, 255,
+    ]);
+    const result = cleanupFlatChroma(original, original, key);
+
+    expect(colorDistance(109, 8, 103, key)).toBeGreaterThan(190);
+    expect([result[3], result[7], result[11]]).toEqual([0, 0, 255]);
+  });
+
+  it("recolors only exterior purple spill while preserving the foreground shape", () => {
+    const width = 7;
+    const height = 7;
+    const key = { red: 255, green: 0, blue: 255 };
+    const original = new Uint8ClampedArray(width * height * 4);
+    for (let index = 0; index < original.length; index += 4) {
+      original[index] = key.red;
+      original[index + 1] = key.green;
+      original[index + 2] = key.blue;
+      original[index + 3] = 255;
+    }
+    for (let y = 2; y <= 4; y += 1) {
+      for (let x = 2; x <= 4; x += 1) {
+        const index = (y * width + x) * 4;
+        const edge = x === 2 || x === 4 || y === 2 || y === 4;
+        original[index] = edge ? 80 : 20;
+        original[index + 1] = edge ? 10 : 50;
+        original[index + 2] = edge ? 120 : 100;
+      }
+    }
+
+    const result = cleanupFlatChroma(original, original, key, width, height);
+    const center = (3 * width + 3) * 4;
+    const repairedEdge = (2 * width + 3) * 4;
+    expect(result[3]).toBe(0);
+    expect(result[center + 3]).toBe(255);
+    expect(result[repairedEdge + 3]).toBe(255);
+    expect([
+      result[repairedEdge],
+      result[repairedEdge + 1],
+      result[repairedEdge + 2],
+    ]).toEqual([20, 50, 100]);
+  });
+
+  it("keeps a similar purple detail when it is enclosed inside the character", () => {
+    const width = 9;
+    const height = 9;
+    const key = { red: 255, green: 0, blue: 255 };
+    const original = new Uint8ClampedArray(width * height * 4);
+    for (let index = 0; index < original.length; index += 4) {
+      original[index] = key.red;
+      original[index + 1] = key.green;
+      original[index + 2] = key.blue;
+      original[index + 3] = 255;
+    }
+    for (let y = 2; y <= 6; y += 1) {
+      for (let x = 2; x <= 6; x += 1) {
+        const index = (y * width + x) * 4;
+        original[index] = 20;
+        original[index + 1] = 50;
+        original[index + 2] = 100;
+      }
+    }
+    const detail = (4 * width + 4) * 4;
+    original[detail] = 80;
+    original[detail + 1] = 10;
+    original[detail + 2] = 120;
+
+    const result = cleanupFlatChroma(original, original, key, width, height);
+    expect([result[detail], result[detail + 1], result[detail + 2], result[detail + 3]])
+      .toEqual([80, 10, 120, 255]);
+  });
+
+  it("repairs a muted inner halo when the original pixel was key-contaminated", () => {
+    const width = 9;
+    const height = 9;
+    const key = { red: 255, green: 0, blue: 255 };
+    const original = new Uint8ClampedArray(width * height * 4);
+    for (let index = 0; index < original.length; index += 4) {
+      original[index] = key.red;
+      original[index + 1] = key.green;
+      original[index + 2] = key.blue;
+      original[index + 3] = 255;
+    }
+    for (let y = 2; y <= 6; y += 1) {
+      for (let x = 2; x <= 6; x += 1) {
+        const index = (y * width + x) * 4;
+        original[index] = 45;
+        original[index + 1] = 105;
+        original[index + 2] = 55;
+      }
+    }
+    const halo = (4 * width + 3) * 4;
+    original[halo] = 171;
+    original[halo + 1] = 17;
+    original[halo + 2] = 176;
+    const cleaned = new Uint8ClampedArray(original);
+    cleaned[halo] = 101;
+    cleaned[halo + 1] = 65;
+    cleaned[halo + 2] = 111;
+
+    const result = cleanupFlatChroma(original, cleaned, key, width, height);
+    expect([result[halo], result[halo + 1], result[halo + 2], result[halo + 3]])
+      .toEqual([45, 105, 55, 255]);
+  });
+
+  it("repairs a halo even when the same color appears in a distant safe detail", () => {
+    const width = 25;
+    const height = 9;
+    const key = { red: 255, green: 0, blue: 255 };
+    const original = new Uint8ClampedArray(width * height * 4);
+    for (let index = 0; index < original.length; index += 4) {
+      original[index] = key.red;
+      original[index + 1] = key.green;
+      original[index + 2] = key.blue;
+      original[index + 3] = 255;
+    }
+    for (let y = 2; y <= 6; y += 1) {
+      for (let x = 2; x <= 22; x += 1) {
+        const index = (y * width + x) * 4;
+        original.set([45, 105, 55, 255], index);
+      }
+    }
+    const halo = (4 * width + 3) * 4;
+    original.set([171, 17, 176, 255], halo);
+    const distantDetail = (4 * width + 21) * 4;
+    original.set([101, 65, 111, 255], distantDetail);
+    const cleaned = new Uint8ClampedArray(original);
+    cleaned.set([101, 65, 111, 255], halo);
+
+    const result = cleanupFlatChroma(original, cleaned, key, width, height);
+    expect([result[halo], result[halo + 1], result[halo + 2], result[halo + 3]])
+      .toEqual([45, 105, 55, 255]);
+  });
+
+  it("preserves a nearly black outline even when original chroma evidence is nearby", () => {
+    const width = 7;
+    const height = 7;
+    const key = { red: 255, green: 0, blue: 255 };
+    const cleaned = new Uint8ClampedArray(width * height * 4);
+    const evidence = new Uint8ClampedArray(width * height * 4);
+    for (let index = 0; index < evidence.length; index += 4) {
+      evidence[index] = key.red;
+      evidence[index + 1] = key.green;
+      evidence[index + 2] = key.blue;
+      evidence[index + 3] = 255;
+    }
+    for (let y = 2; y <= 4; y += 1) {
+      for (let x = 2; x <= 4; x += 1) {
+        const index = (y * width + x) * 4;
+        cleaned.set([45, 105, 55, 255], index);
+        evidence.set([45, 105, 55, 255], index);
+      }
+    }
+    const outline = (4 * width + 3) * 4;
+    cleaned.set([12, 5, 19, 255], outline);
+    evidence.set([151, 7, 164, 255], outline);
+
+    const result = repairBoundaryChromaFringe(cleaned, width, height, key, evidence);
+    expect([result[outline], result[outline + 1], result[outline + 2], result[outline + 3]])
+      .toEqual([12, 5, 19, 255]);
   });
 });

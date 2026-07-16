@@ -15,12 +15,28 @@ type RunLog = {
   schemaVersion: string;
   sampleId: string;
   public: boolean;
-  source: { path: string; sha256: string; bytes: number };
+  source: {
+    path: string;
+    sha256: string;
+    bytes: number;
+    sheet: {
+      width: number;
+      height: number;
+      layout: string;
+      cellWidth: number;
+      cellHeight: number;
+    };
+  };
   pipeline: {
     mode: string;
     entryPoint: string;
     imageProcessing: string;
     backgroundRemoval: string;
+    backgroundRemovalModel: string;
+    sourceFrameSizes: Array<{ width: number; height: number }>;
+    fit: string;
+    fps: number;
+    motionFps: Record<string, number>;
     flatChromaPostprocess: {
       applied: boolean;
       keyRgb?: [number, number, number];
@@ -35,8 +51,26 @@ type RunLog = {
       softAlphaPixels: number;
       chromaFringePixels: number;
       alphaBounds: { x: number; y: number; width: number; height: number };
-      largestEnclosedTransparentRegion: number;
+      centroid: { x: number; y: number };
+      baselineY: number;
     }>;
+    transitions: Array<{
+      from: number;
+      to: number;
+      centroidJumpRatio: number;
+      baselineJumpRatio: number;
+    }>;
+  };
+  qualityGate: {
+    passed: boolean;
+    thresholds: {
+      maxSoftAlphaPixels: number;
+      maxChromaFringePixels: number;
+      maxCentroidJumpRatio: number;
+      maxBaselineJumpRatio: number;
+    };
+    violations: unknown[];
+    checks: string[];
   };
   appExports: {
     project: string;
@@ -53,9 +87,16 @@ type RunLog = {
     size: { width: number; height: number };
     windowVisible: boolean;
     alwaysOnTop: boolean;
-    capture: { width: number; height: number };
-    nonTransparentPixels: number;
-    captureSha256: string;
+    motionDriver: string;
+    expectedLoop: number[];
+    observedLoop: number[];
+    intervalsMs: number[];
+    captures: Array<{
+      index: number;
+      capture: { width: number; height: number };
+      nonTransparentPixels: number;
+      captureSha256: string;
+    }>;
     verificationPath: string;
   };
   outputSha256: Record<string, string>;
@@ -120,8 +161,14 @@ describe.each(sampleIds)("beginner sample %s", (id) => {
     expect(project.version).toBe(1);
     expect(project.name).toBe(id);
     expect(project.activeKitId).toMatch(/^[^:]+:[^:]+$/);
-    expect(project.fps).toBeGreaterThanOrEqual(2);
-    expect(project.fps).toBeLessThanOrEqual(16);
+    expect(project.fps).toBe(4);
+    expect(project.motionFps).toEqual({
+      idle: 4,
+      walk: 8,
+      jump: 8,
+      sleep: 4,
+      reaction: 8,
+    });
     expect(project.scale).toBeGreaterThan(0);
     expect(Object.keys(project.frames).sort()).toEqual([...PET_ANIMATION_NAMES].sort());
 
@@ -154,24 +201,46 @@ describe.each(sampleIds)("beginner sample %s", (id) => {
       expect(hash(exported)).toBe(hash(embedded));
       await expectCleanPixelAlpha(exported, frame.width, keyRgb as [number, number, number]);
     }
-    expect(new Set(exportedHashes).size).toBeGreaterThanOrEqual(3);
-    expect(new Set(frames.map((frame) => frame.dataUrl)).size).toBeGreaterThanOrEqual(3);
+    expect(new Set(exportedHashes).size).toBe(4);
+    expect(new Set(frames.map((frame) => frame.dataUrl)).size).toBe(4);
   });
 
   it("includes the app exports, preview, and machine-readable provenance with matching hashes", async () => {
     const { directory, project, log } = await loadSample(id);
-    expect(log.schemaVersion).toBe("1.0.0");
+    expect(log.schemaVersion).toBe("2.0.0");
     expect(log.sampleId).toBe(id);
     expect(log.public).toBe(true);
     expect(log.pipeline.mode).toBe("hidden-electron-browser-mode");
-    expect(log.pipeline.entryPoint).toContain("quick-pet UI");
-    expect(log.pipeline.imageProcessing).toContain("no external image post-processing");
-    expect(log.pipeline.backgroundRemoval).toBe("performed");
+    expect(log.pipeline.entryPoint).toContain("pose-sheet import");
+    expect(log.pipeline.imageProcessing).toContain("PixelPet Studio UI only");
+    expect(log.pipeline.backgroundRemoval).toBe("flat-chroma-direct");
+    expect(log.pipeline.backgroundRemovalModel).toContain("not used");
+    expect(log.pipeline.fit).toContain("robust body-row anchor");
+    expect(log.pipeline.fit).toContain("shared union alpha bounds");
+    expect(log.pipeline.fps).toBe(4);
+    expect(log.pipeline.motionFps).toEqual(project.motionFps);
     expect(log.pipeline.flatChromaPostprocess).toMatchObject({
       applied: true,
-      operations: ["key-distance matte", "despill", "pixel hard-alpha"],
+      operations: [
+        "key-distance matte",
+        "despill",
+        "HSV hue and chroma-direction residue detection",
+        "exterior-boundary nearest-foreground color repair",
+        "source and final-canvas fringe pass",
+        "pixel hard-alpha",
+      ],
     });
-    expect(log.pipeline.idlePreset).toEqual(["neutral", "inhale-up", "soft-squash", "exhale"]);
+    expect(log.pipeline.idlePreset).toHaveLength(4);
+    expect(log.pipeline.idlePreset.every((name) => name.startsWith("AI-authored"))).toBe(true);
+    expect(log.source.sheet.layout).toContain("four equal cells");
+    expect(log.source.sheet.width).toBe(log.source.sheet.cellWidth * 4);
+    expect(log.source.sheet.height).toBe(log.source.sheet.cellHeight);
+    expect(log.pipeline.sourceFrameSizes).toEqual(
+      Array.from({ length: 4 }, () => ({
+        width: log.source.sheet.cellWidth,
+        height: log.source.sheet.cellHeight,
+      })),
+    );
     expect(log.pipeline.frameDiagnostics).toHaveLength(4);
     for (const diagnostics of log.pipeline.frameDiagnostics) {
       expect(diagnostics.opaquePixels).toBeGreaterThan(100);
@@ -179,11 +248,22 @@ describe.each(sampleIds)("beginner sample %s", (id) => {
       expect(diagnostics.chromaFringePixels).toBe(0);
       expect(diagnostics.alphaBounds.width).toBeGreaterThan(0);
       expect(diagnostics.alphaBounds.height).toBeGreaterThan(0);
-      expect(diagnostics.largestEnclosedTransparentRegion).toBeLessThanOrEqual(32);
+      expect(diagnostics.centroid.x).toBeGreaterThan(0);
+      expect(diagnostics.centroid.y).toBeGreaterThan(0);
     }
-    expect(
-      new Set(log.pipeline.frameDiagnostics.map((item) => JSON.stringify(item.alphaBounds))).size,
-    ).toBeGreaterThanOrEqual(3);
+    expect(new Set(log.pipeline.frameDiagnostics.map((item) => item.baselineY)).size).toBe(1);
+    expect(log.pipeline.transitions).toHaveLength(4);
+    for (const transition of log.pipeline.transitions) {
+      expect(transition.centroidJumpRatio).toBeLessThanOrEqual(
+        log.qualityGate.thresholds.maxCentroidJumpRatio,
+      );
+      expect(transition.baselineJumpRatio).toBeLessThanOrEqual(
+        log.qualityGate.thresholds.maxBaselineJumpRatio,
+      );
+    }
+    expect(log.qualityGate.passed).toBe(true);
+    expect(log.qualityGate.violations).toEqual([]);
+    expect(log.qualityGate.checks).toContain("last-to-first loop boundary included");
     expect(log.appExports.projectExportButton).toBe("export-project-json");
     expect(log.appExports.spriteSheetExportButton).toBe("export-spritesheet");
     expect(log.appExports.downloadTransport).toBe("Electron will-download");
@@ -193,13 +273,30 @@ describe.each(sampleIds)("beginner sample %s", (id) => {
       animation: "idle",
       windowVisible: true,
       alwaysOnTop: true,
+      motionDriver: "frames",
+      expectedLoop: [0, 1, 2, 3, 0],
+      observedLoop: [0, 1, 2, 3, 0],
     });
     expect(log.desktopPetVerification.size.width).toBeGreaterThan(0);
     expect(log.desktopPetVerification.size.height).toBeGreaterThan(0);
-    expect(log.desktopPetVerification.capture.width).toBeGreaterThan(0);
-    expect(log.desktopPetVerification.capture.height).toBeGreaterThan(0);
-    expect(log.desktopPetVerification.nonTransparentPixels).toBeGreaterThan(0);
-    expect(log.desktopPetVerification.captureSha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(log.desktopPetVerification.intervalsMs).toHaveLength(4);
+    expect(log.desktopPetVerification.captures).toHaveLength(5);
+    for (const capture of log.desktopPetVerification.captures) {
+      expect(capture.capture.width).toBeGreaterThan(0);
+      expect(capture.capture.height).toBeGreaterThan(0);
+      expect(capture.nonTransparentPixels).toBeGreaterThan(0);
+      expect(capture.captureSha256).toMatch(/^[a-f0-9]{64}$/);
+    }
+    expect(log.desktopPetVerification.captures[0].captureSha256).toBe(
+      log.desktopPetVerification.captures[4].captureSha256,
+    );
+    expect(
+      new Set(
+        log.desktopPetVerification.captures
+          .slice(0, 4)
+          .map((capture) => capture.captureSha256),
+      ).size,
+    ).toBe(4);
     expect(log.desktopPetVerification.verificationPath).toContain("WindowManager.startPet");
     expect(log.rightsBoundary).toContain("Original public sample");
 

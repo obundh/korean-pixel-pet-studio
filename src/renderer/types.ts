@@ -72,6 +72,7 @@ export type ProjectSnapshot = {
   activeKitId: string;
   frames: FrameCollection;
   fps: number;
+  motionFps?: Record<AnimationState, number>;
   scale: number;
   createdAt: string;
   updatedAt: string;

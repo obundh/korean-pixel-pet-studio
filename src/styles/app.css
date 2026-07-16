@@ -1255,11 +1255,12 @@ img {
   align-items: center;
   border-bottom: 1px solid var(--line);
   display: flex;
+  gap: 18px;
   justify-content: space-between;
   padding: 22px 24px;
 }
 
-.frames-panel__heading > div > span {
+.frames-panel__copy > span {
   color: var(--lime);
   font-family: var(--mono);
   font-size: 8px;
@@ -1274,6 +1275,77 @@ img {
   color: var(--muted);
   font-size: 9px;
   margin: 0;
+}
+
+.frames-panel__actions {
+  align-items: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.motion-batch-status {
+  align-items: flex-start;
+  background: rgba(200, 255, 61, 0.025);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  display: flex;
+  gap: 10px;
+  padding: 13px 24px;
+}
+
+.motion-batch-status > svg {
+  color: var(--lime);
+  flex: 0 0 auto;
+  height: 16px;
+  margin-top: 1px;
+  width: 16px;
+}
+
+.motion-batch-status > div {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+}
+
+.motion-batch-status strong {
+  color: var(--text);
+  font-size: 10px;
+}
+
+.motion-batch-status span {
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.motion-batch-status i {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  display: block;
+  height: 4px;
+  margin-top: 5px;
+  overflow: hidden;
+}
+
+.motion-batch-status i b {
+  background: var(--lime);
+  display: block;
+  height: 100%;
+  transition: width 120ms ease;
+}
+
+.motion-batch-status--success {
+  background: rgba(200, 255, 61, 0.055);
+}
+
+.motion-batch-status--error {
+  background: rgba(255, 77, 106, 0.055);
+}
+
+.motion-batch-status--error > svg,
+.motion-batch-status--error strong {
+  color: #ff8a9b;
 }
 
 .frame-grid {
@@ -3185,6 +3257,21 @@ body.pet-window::before {
   .frame-grid {
     grid-template-columns: repeat(2, 1fr);
     padding: 16px;
+  }
+
+  .frames-panel__heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .frames-panel__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .frames-panel__actions .button {
+    justify-content: center;
+    width: 100%;
   }
 
   .frames-panel__tips {

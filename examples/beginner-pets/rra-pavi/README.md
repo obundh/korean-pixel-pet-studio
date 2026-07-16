@@ -47,7 +47,7 @@
 안녕하세요. 국립전파연구원 마스코트 파비의 이미지 이용 범위를 문의드립니다.
 
 사용 목적: 파비 이미지를 픽셀아트로 변환하고, 배경을 투명하게 만든 뒤
-4프레임 대기 애니메이션 데스크톱 펫으로 제작하는 기술 시연
+실제 포즈 4칸 가로 시트를 이용한 4 FPS 대기 애니메이션 데스크톱 펫으로 제작하는 기술 시연
 
 확인 요청:
 1. 공식 PNG 다운로드 및 작업용 복제 허용 여부
@@ -69,7 +69,7 @@
 문서/PixelPet-Local/rra-pavi/
 ├── 01-source/
 ├── 02-canonical/
-├── 03-idle/
+├── 03-idle-sheet/
 └── 04-project/
 ```
 
@@ -104,18 +104,61 @@ Constraints: Images 1–2 control identity; Image 3 must not contribute its subj
 
 같은 캐릭터로 보이고 특징의 개수와 위치가 맞는지 확인한 뒤 승인본만 `02-canonical`에 저장합니다. 더 자세한 검수법은 [AI 생성 가이드](../../../docs/beginner/CREATE_WITH_AI.md)에 있습니다.
 
-### 3. PixelPet Studio 빠른 만들기
+### 3. 실제 대기 포즈 4칸 시트 생성
 
-1. 앱의 **생성 가이드**에서 기준 이미지와 같은 스타일을 선택합니다.
-2. **배경 제거** 단계로 이동합니다.
-3. **이미지 한 장으로 자동 완성** 카드에서 **이미지 한 장 고르기**를 누릅니다.
-4. 승인한 기준 픽셀 마스터를 선택합니다.
-5. 자동 배경 제거와 선택 스타일 캔버스 정규화가 끝날 때까지 기다립니다.
-6. 대기 프레임이 `4/4`로 만들어졌는지 확인합니다.
-7. **움직임 확인**에서 얼굴, 뿔, 전파 표현과 옷 아이콘이 유지되는지 봅니다.
-8. **펫 완성 → 프로젝트 저장**으로 `04-project` 폴더에 저장합니다.
+권한 범위 안에서 승인한 기준 픽셀 마스터를 가장 중요한 정체성 레퍼런스로 사용합니다. PixelPet Studio **생성 가이드 → 대기**에서 F01~F04 포즈 레퍼런스도 저장합니다.
 
-빠른 만들기는 같은 이미지를 바탕으로 대기 루프를 구성합니다. 새로운 걷기나 점프 포즈가 필요하면 [AI 생성 가이드](../../../docs/beginner/CREATE_WITH_AI.md)의 포즈별 한 장 생성 과정을 따르세요.
+첨부 순서는 다음과 같습니다.
+
+1. `Image 1`: `02-canonical`에 저장한 승인 기준 픽셀 마스터
+2. `Image 2`: 기준 마스터에 사용한 같은 `soft-cluster-16` 스타일 레퍼런스
+3. `Image 3~6`: 앱에서 저장한 대기 F01, F02, F03, F04 포즈 레퍼런스
+4. 공식 파비 원본: 기준 마스터에서 가려진 특징을 다시 확인해야 할 때만 추가
+
+아래 프롬프트는 권한 확인 후 로컬 작업을 재현하기 위한 기록입니다. 프롬프트 공개가 파비 원본이나 결과 이미지의 공개 허락을 뜻하지 않습니다.
+
+```text
+Use case: identity-preserve
+Asset type: local-only four-frame horizontal pixel-art idle source sheet for PixelPet Studio
+Identity reference: preserve exactly the approved Pabi pixel master, including the white baby radio-goblin body, two antenna-like horns, one blue radio waveform between the horns, huge black oval eyes with gray rims, pink freckled cheeks, small white side wings, lavender body suit, and white wireless-signal chest icon.
+Pose references: Images 3–6 define chronological F01, F02, F03, and F04 joint positions only. Do not copy their mannequin appearance or colors.
+Primary request: create four genuine but subtle idle poses of the exact same Pabi character in one horizontal row of four equal cells, chronological left to right: F01 neutral; F02 gentle inhale with local movement in the hands, wings or waveform; F03 relaxed transition; F04 gentle exhale with a small eyelid, wing or waveform change.
+Consistency: identical camera, pixel grid, character scale, body center, feet baseline, outline thickness, palette, face, horns, waveform count, wing count and chest icon in all cells.
+Animation rule: change only the local pixels needed for the pose. Never stretch, squash, scale, widen or flatten the whole character. F04 must loop naturally back to F01.
+Layout: exactly one row and four equal cells; one full-body character per cell; no panel dividers, gaps, labels, frame numbers, captions or border.
+Backdrop: one perfectly uniform solid chroma color across the whole sheet that is not used anywhere inside Pabi; no floor or shadow.
+Style: crisp hard pixel art, no anti-aliasing, semi-transparent edge, blur, glow or smooth vector curves.
+Output: the horizontal four-cell image only.
+```
+
+다음을 확인한 뒤 결과를 Git 저장소 밖의 `03-idle-sheet/idle-sheet.png`에 저장합니다.
+
+- 한 줄에 정확히 4칸이며 모두 같은 너비인가
+- 왼쪽부터 F01, F02, F03, F04인가
+- 얼굴, 뿔 2개, 전파 1개, 날개와 옷 아이콘이 모든 칸에서 유지되는가
+- 몸 전체가 늘어나거나 납작해지지 않고 일부 픽셀 포즈가 실제로 변하는가
+- 칸 사이 선, 글자, 번호와 바닥 그림자가 없는가
+
+### 4. PixelPet Studio에서 분할·일괄 정리
+
+1. 앱의 **프레임 가져오기**로 이동합니다.
+2. **대기** 탭을 선택합니다.
+3. **포즈 시트 한 장 가져오기**를 누릅니다.
+4. `03-idle-sheet/idle-sheet.png`를 선택합니다.
+5. 앱이 시트를 왼쪽부터 4등분해 01~04 슬롯을 채웠는지 확인합니다.
+6. **이 동작 한 번에 정리**를 누릅니다.
+7. 앱이 로컬에서 배경을 제거하고 넓고 안정적인 몸통 행을 기준으로 작은 좌우 드리프트만 제한적으로 보정한 뒤, 시트에 그려진 발 높이는 유지하면서 네 포즈에 하나의 공통 캔버스와 배율을 적용할 때까지 기다립니다.
+8. **움직임 확인**에서 기본값 **4 FPS**로 재생합니다.
+9. 얼굴, 뿔, 전파 표현, 날개와 옷 아이콘이 유지되며 실제 부분 포즈가 움직이는지 확인합니다.
+10. 허락받은 범위 안에서만 **펫 완성 → 프로젝트 저장**으로 `04-project` 폴더에 저장합니다.
+
+시트 분할과 로컬 배경 제거는 외부 서버로 이미지를 보내지 않습니다. 다만 시트 자체를 GPT, Gemini 등 외부 AI로 생성할 때에는 해당 서비스의 데이터 정책과 권한 범위를 따릅니다.
+
+### 빠른 모드는 무엇이 다른가요?
+
+**이미지 한 장으로 자동 완성**은 승인 기준 마스터를 `0px → 위로 1px → 위로 1px → 0px`로 옮기는 4 FPS 무왜곡 bob입니다. 몸 전체를 찌그러뜨리지는 않지만 파비의 날개, 눈, 전파와 손이 실제로 변하는 포즈 애니메이션도 아닙니다.
+
+권한 확인용 정지 이미지 실행을 빨리 시험할 때만 보조적으로 사용할 수 있습니다. 공식 샘플과 같은 실제 움직임 검증에는 위의 4칸 포즈 시트 흐름을 사용하세요.
 
 ## 공개 전 마지막 확인
 

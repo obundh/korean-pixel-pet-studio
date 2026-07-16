@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import type { PetAnimationName, PixelPetProject } from "../../shared/project";
+import {
+  getPixelPetMotionFps,
+  type PetAnimationName,
+  type PixelPetProject,
+} from "../../shared/project";
 import type { PetDirection, PetRenderCommand } from "../../shared/ipc";
 
 export function PetSurface() {
@@ -42,6 +46,7 @@ export function PetSurface() {
     () => project?.frames[animation].filter((frame) => frame !== null) ?? [],
     [animation, project],
   );
+  const motionFps = project ? getPixelPetMotionFps(project, animation) : 1;
 
   useEffect(() => {
     setFrameIndex(0);
@@ -51,10 +56,10 @@ export function PetSurface() {
     if (paused || activeFrames.length <= 1 || !project) return undefined;
     const timer = window.setInterval(
       () => setFrameIndex((current) => (current + 1) % activeFrames.length),
-      Math.max(50, 1000 / project.fps),
+      Math.max(50, 1000 / motionFps),
     );
     return () => window.clearInterval(timer);
-  }, [activeFrames.length, paused, project]);
+  }, [activeFrames.length, motionFps, paused, project]);
 
   useEffect(() => {
     if (
@@ -65,14 +70,15 @@ export function PetSurface() {
     ) {
       return undefined;
     }
-    const returnDelay = Math.max(180, (activeFrames.length / project.fps) * 1000);
+    const returnDelay = Math.max(180, (activeFrames.length / motionFps) * 1000);
     const timer = window.setTimeout(() => {
       void window.pixelPet?.updatePet({ animation: "idle" });
     }, returnDelay);
     return () => window.clearTimeout(timer);
-  }, [activeFrames.length, animation, paused, project]);
+  }, [activeFrames.length, animation, motionFps, paused, project]);
 
   const frame = activeFrames[frameIndex % Math.max(1, activeFrames.length)];
+  const usesCssMotion = !paused && activeFrames.length === 1;
   const reactToClick = () => {
     if (!project?.frames.reaction.some(Boolean)) return;
     void window.pixelPet?.updatePet({ animation: "reaction" });
@@ -90,7 +96,16 @@ export function PetSurface() {
 
   return (
     <main
-      className={`pet-surface pet-motion--${animation}`}
+      className={`pet-surface${usesCssMotion ? ` pet-motion--${animation}` : ""}`}
+      data-motion-driver={
+        paused
+          ? "paused"
+          : activeFrames.length > 1
+            ? "frames"
+            : activeFrames.length === 1
+              ? "css"
+              : "none"
+      }
       aria-label={`${project.name} 데스크톱 펫`}
       onDoubleClick={reactToClick}
     >
