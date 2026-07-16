@@ -133,8 +133,9 @@ await prepareOnnxNotices(dataOnnxVersion, dataOnnxRevision, "data-runtime");
 
 const electronDir = resolve(root, "node_modules", "electron");
 const electronPackage = await readJson(resolve(electronDir, "package.json"));
+await ensureElectronRuntimeNotices(electronDir);
 await copyRequired(
-  resolve(electronDir, "dist", "LICENSE"),
+  resolve(electronDir, "LICENSE"),
   resolve(output, `Electron-${electronPackage.version}-LICENSE.txt`)
 );
 await copyRequired(
@@ -200,6 +201,26 @@ await writeFile(
 console.log(
   `Legal bundle ready (${runtimeDependencies.length} runtime packages, commit ${commit.slice(0, 12)}, dirty=${String(dirty)}).`
 );
+
+async function ensureElectronRuntimeNotices(electronDir) {
+  const chromiumNotices = resolve(electronDir, "dist", "LICENSES.chromium.html");
+  try {
+    if ((await stat(chromiumNotices)).isFile()) return;
+  } catch {
+    // Electron's install script was blocked or skipped. Run the exact pinned
+    // package installer so CI, smoke tests, and legal notices use one runtime.
+  }
+
+  execFileSync(process.execPath, [resolve(electronDir, "install.js")], {
+    cwd: electronDir,
+    stdio: "inherit"
+  });
+
+  const info = await stat(chromiumNotices);
+  if (!info.isFile() || info.size === 0) {
+    throw new Error("Electron installed without LICENSES.chromium.html.");
+  }
+}
 
 async function prepareOnnxNotices(version, revision, role) {
   const baseUrl = `https://raw.githubusercontent.com/microsoft/onnxruntime/${revision}`;
