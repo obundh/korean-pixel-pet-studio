@@ -9,6 +9,7 @@ export type IconName =
   | "download"
   | "folder"
   | "image"
+  | "info"
   | "layers"
   | "pause"
   | "play"
@@ -53,6 +54,12 @@ const paths: Record<IconName, ReactElement> = {
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <circle cx="9" cy="10" r="2" />
       <path d="m4 17 5-4 3 3 3-2 5 4" />
+    </>
+  ),
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v6M12 7h.01" />
     </>
   ),
   layers: (

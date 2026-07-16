@@ -5,6 +5,7 @@ release/
 coverage/
 public/reference-kits/
 public/background-removal/
+build/legal/
 .DS_Store
 *.log
 *.local

@@ -1,5 +1,8 @@
 import type { PetAnimationName, PixelPetProject } from "./project.js";
 
+export const SOURCE_REPOSITORY_URL =
+  "https://github.com/obundh/korean-pixel-pet-studio";
+
 export const IPC_CHANNELS = {
   projectSave: "pixelpet:project:save",
   projectLoad: "pixelpet:project:load",
@@ -10,6 +13,8 @@ export const IPC_CHANNELS = {
   petGetState: "pixelpet:pet:get-state",
   petStateChanged: "pixelpet:pet:state-changed",
   petRenderCommand: "pixelpet:pet:render-command",
+  legalOpenSource: "pixelpet:legal:open-source",
+  legalOpenDirectory: "pixelpet:legal:open-directory",
 } as const;
 
 export type IpcChannels = typeof IPC_CHANNELS;
@@ -104,6 +109,10 @@ export type ExportPetResult =
   | { status: "exported"; path: string }
   | { status: "cancelled" };
 
+export type OpenLegalResourceResult =
+  | { status: "opened" }
+  | { status: "unavailable"; message: string };
+
 export interface PixelPetApi {
   readonly platform: "darwin" | "win32" | "linux";
   startPet(request: StartPetRequest): Promise<PetWindowState>;
@@ -113,6 +122,8 @@ export interface PixelPetApi {
   saveProject(request: SaveProjectRequest): Promise<SaveProjectResult>;
   loadProject(): Promise<LoadProjectResult>;
   exportPet(request: ExportPetRequest): Promise<ExportPetResult>;
+  openSourceRepository(): Promise<OpenLegalResourceResult>;
+  openLegalDirectory(): Promise<OpenLegalResourceResult>;
   onPetState(listener: (state: PetWindowState) => void): () => void;
   onPetCommand(listener: (command: PetRenderCommand) => void): () => void;
 }

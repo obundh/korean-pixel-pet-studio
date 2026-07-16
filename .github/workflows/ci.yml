@@ -20,6 +20,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - run: npm run legal:check
       # GitHub's ephemeral runner cannot grant Electron's downloaded helper
       # the root-owned SUID bit, so only this isolated smoke uses --no-sandbox.
       - run: xvfb-run --auto-servernum npm run smoke:quick-pet:ci

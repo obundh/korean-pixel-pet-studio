@@ -31,6 +31,7 @@ jobs:
       - run: npm run ${{ matrix.command }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - run: npm run legal:check -- --packaged
       - uses: actions/upload-artifact@v7
         with:
           name: PixelPet-Studio-${{ matrix.artifact }}

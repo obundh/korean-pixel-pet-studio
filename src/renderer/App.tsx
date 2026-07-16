@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -7,7 +8,10 @@ import {
   type DragEvent,
   type ReactNode,
 } from "react";
-import type { PetWindowState } from "../shared/ipc";
+import {
+  SOURCE_REPOSITORY_URL,
+  type PetWindowState,
+} from "../shared/ipc";
 import type { PixelPetProject } from "../shared/project";
 import { Icon, type IconName } from "./components/Icon";
 import { PetSurface } from "./components/PetSurface";
@@ -52,6 +56,7 @@ type QuickPetState = {
   chromaCleanup?: "applied" | "not-needed";
   chromaKey?: string;
 };
+type LegalAction = "source" | "directory";
 
 const STEP_ITEMS: Array<{
   id: StudioStep;
@@ -265,6 +270,149 @@ function SectionHeading({
   );
 }
 
+function LegalDialog({
+  busyAction,
+  onClose,
+  onOpen,
+}: {
+  busyAction: LegalAction | null;
+  onClose: () => void;
+  onOpen: (target: LegalAction) => void;
+}) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="legal-dialog-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      role="presentation"
+    >
+      <section
+        aria-describedby="legal-dialog-description"
+        aria-labelledby="legal-dialog-title"
+        aria-modal="true"
+        className="legal-dialog"
+        role="dialog"
+      >
+        <header className="legal-dialog__header">
+          <div>
+            <span>OPEN SOURCE · RIGHTS</span>
+            <h2 id="legal-dialog-title">오픈소스와 이용 권리</h2>
+          </div>
+          <button
+            aria-label="오픈소스 안내 닫기"
+            className="legal-dialog__close"
+            onClick={onClose}
+            ref={closeButtonRef}
+            type="button"
+          >
+            <Icon name="x" />
+          </button>
+        </header>
+
+        <p className="legal-dialog__intro" id="legal-dialog-description">
+          PixelPet Studio는 누구나 소스를 확인하고 개선할 수 있도록 공개한
+          비상업 커뮤니티 프로젝트입니다. 프로그램의 법적 이용 조건은 GNU
+          AGPL v3 이상(AGPL-3.0-or-later)이 정하며, 제작자의 비상업 목적이
+          다른 사람의 상업적 이용을 별도로 금지하는 것은 아닙니다.
+        </p>
+
+        <div className="legal-dialog__license-notice" role="note">
+          <strong>Copyright © 2026 obundh and contributors</strong>
+          <p>
+            이 프로그램은 어떠한 보증도 없이 제공됩니다. GNU AGPL v3 이상
+            조건에 따라 복제·수정·재배포할 수 있으며, 라이선스 전문과 대응
+            소스 안내는 배포본의 legal 폴더에서 확인할 수 있습니다.
+          </p>
+        </div>
+
+        <div className="legal-dialog__grid">
+          <article>
+            <span>01</span>
+            <div>
+              <strong>프로그램 라이선스</strong>
+              <p>
+                앱과 배포본의 대응 소스는 GNU Affero General Public License
+                version 3 or later 조건에 따라 제공합니다.
+              </p>
+            </div>
+          </article>
+          <article>
+            <span>02</span>
+            <div>
+              <strong>소스 코드</strong>
+              <p>
+                배포본에 포함된 SOURCE_OFFER와 아래 공개 저장소에서 같은 버전의
+                소스 및 빌드 안내를 확인할 수 있습니다.
+              </p>
+              <code>{SOURCE_REPOSITORY_URL}</code>
+            </div>
+          </article>
+          <article>
+            <span>03</span>
+            <div>
+              <strong>제3자 오픈소스</strong>
+              <p>
+                배경 제거 모델과 런타임을 포함한 구성요소별 저작권·라이선스는
+                배포본의 legal 폴더에 원문과 함께 보관합니다.
+              </p>
+            </div>
+          </article>
+        </div>
+
+        <aside className="legal-dialog__notice">
+          <Icon name="warning" />
+          <p>
+            기관 마스코트·로고·사용자가 가져온 이미지는 이 앱의 라이선스에
+            포함되지 않습니다. 생성형 AI에 업로드하거나 결과를 공유하기 전에
+            해당 권리자의 허용 범위를 직접 확인해 주세요.
+          </p>
+        </aside>
+
+        <footer className="legal-dialog__actions">
+          <button
+            className="button button--soft"
+            disabled={busyAction !== null}
+            onClick={() => onOpen("directory")}
+            type="button"
+          >
+            <Icon name="folder" />
+            {busyAction === "directory" ? "폴더 여는 중…" : "라이선스 폴더 열기"}
+          </button>
+          <button
+            className="button button--primary"
+            disabled={busyAction !== null}
+            onClick={() => onOpen("source")}
+            type="button"
+          >
+            <Icon name="info" />
+            {busyAction === "source" ? "브라우저 여는 중…" : "소스 저장소 보기"}
+          </button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
 function MotionTabs({
   active,
   frames,
@@ -452,6 +600,8 @@ function Studio() {
   const [petState, setPetState] = useState<PetWindowState | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [legalDialogOpen, setLegalDialogOpen] = useState(false);
+  const [legalAction, setLegalAction] = useState<LegalAction | null>(null);
   const [removal, setRemoval] = useState<RemovalState>({
     phase: "idle",
     progress: 0,
@@ -552,6 +702,32 @@ function Studio() {
 
   const notify = (tone: ToastMessage["tone"], message: string) =>
     setToast({ tone, message });
+
+  const closeLegalDialog = useCallback(() => setLegalDialogOpen(false), []);
+
+  const openLegalResource = async (target: LegalAction) => {
+    if (!window.pixelPet) {
+      if (target === "source") {
+        window.open(SOURCE_REPOSITORY_URL, "_blank", "noopener,noreferrer");
+      } else {
+        notify("info", "라이선스 폴더는 설치된 데스크톱 앱에서 열 수 있어요.");
+      }
+      return;
+    }
+
+    setLegalAction(target);
+    try {
+      const result =
+        target === "source"
+          ? await window.pixelPet.openSourceRepository()
+          : await window.pixelPet.openLegalDirectory();
+      if (result.status === "unavailable") notify("error", result.message);
+    } catch (error) {
+      notify("error", `오픈소스 자료를 열지 못했습니다: ${getErrorMessage(error)}`);
+    } finally {
+      setLegalAction(null);
+    }
+  };
 
   const beginImageOperation = (action: "quick-pet" | "remove-background"): number | null => {
     if (imageOperationRef.current.busy || busyAction) return null;
@@ -1002,6 +1178,15 @@ function Studio() {
           <span className="save-state">{projectPath ? "저장됨" : "새 프로젝트"}</span>
         </div>
         <div className="app-bar__actions">
+          <button
+            aria-label="오픈소스 및 라이선스 정보"
+            className="button button--ghost"
+            onClick={() => setLegalDialogOpen(true)}
+            type="button"
+          >
+            <Icon name="info" />
+            <span>오픈소스</span>
+          </button>
           <button className="button button--ghost" disabled={Boolean(busyAction)} onClick={loadProject} type="button">
             <Icon name="folder" />
             <span>불러오기</span>
@@ -1672,6 +1857,14 @@ function Studio() {
           </section>
         )}
       </main>
+
+      {legalDialogOpen && (
+        <LegalDialog
+          busyAction={legalAction}
+          onClose={closeLegalDialog}
+          onOpen={(target) => void openLegalResource(target)}
+        />
+      )}
 
       {toast && (
         <div aria-live="polite" className={`toast toast--${toast.tone}`} role="status">

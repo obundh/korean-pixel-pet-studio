@@ -24,6 +24,8 @@ const IPC_CHANNELS = {
   petGetState: "pixelpet:pet:get-state",
   petStateChanged: "pixelpet:pet:state-changed",
   petRenderCommand: "pixelpet:pet:render-command",
+  legalOpenSource: "pixelpet:legal:open-source",
+  legalOpenDirectory: "pixelpet:legal:open-directory",
 } as const satisfies IpcChannels;
 
 const platform: PixelPetApi["platform"] =
@@ -69,6 +71,10 @@ const api: PixelPetApi = Object.freeze({
   loadProject: () => ipcRenderer.invoke(IPC_CHANNELS.projectLoad),
   exportPet: (request: ExportPetRequest) =>
     ipcRenderer.invoke(IPC_CHANNELS.exportPet, request),
+  openSourceRepository: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.legalOpenSource),
+  openLegalDirectory: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.legalOpenDirectory),
   onPetState: (listener: (state: PetWindowState) => void) => {
     petStateListeners.add(listener);
     if (latestPetState) {
