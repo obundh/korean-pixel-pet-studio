@@ -231,8 +231,8 @@ const buildPrompt = (style: StyleReference | undefined): string => {
     "당신은 캐릭터 정체성을 보존하는 게임용 픽셀 캐릭터 전문 아티스트입니다.",
     "",
     "[첨부 이미지의 역할]",
-    "1번 이미지는 변형하면 안 되는 원본 마스코트입니다. 얼굴, 대표 색상, 로고, 의상과 고유 장식을 정확히 유지하세요.",
-    `2번 이미지는 '${style?.label ?? "소프트 픽셀아트"}' 스타일 레퍼런스입니다. 픽셀 크기, 외곽선과 명암 방식만 참고하고 다른 캐릭터의 생김새는 복사하지 마세요.`,
+    "첨부 이미지는 한 장뿐입니다. 변형하면 안 되는 원본 마스코트이며, 얼굴, 대표 색상, 로고, 의상과 고유 장식을 정확히 유지하세요.",
+    "스타일 이미지는 따로 첨부하지 않습니다. 아래 출력 규격과 스타일 규칙만 적용하세요.",
     "",
     "[할 일]",
     "원본 마스코트가 한눈에 같은 캐릭터로 보이는 중립 자세의 기준 픽셀 마스터 한 장을 만드세요. 정면 또는 원본을 가장 잘 알아볼 수 있는 자연스러운 3/4 시점으로 서 있고, 팔다리와 대표 장식이 가려지지 않아야 합니다.",
@@ -249,6 +249,36 @@ const buildPrompt = (style: StyleReference | undefined): string => {
     "[중요]",
     "새 캐릭터나 새 포즈 세트를 창작하지 마세요. 이 한 장은 이후 모든 동작의 정체성 기준이 되는 픽셀 마스터입니다.",
     style?.prompt ? `\n[스타일 세부 규칙]\n${style.prompt}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+};
+
+const buildPoseSheetPrompt = (pose: PoseReferenceSet | undefined): string => {
+  const frameCount = pose?.frames.length || 4;
+  return [
+    "[역할]",
+    "당신은 픽셀 캐릭터의 정체성을 고정한 채 작은 움직임만 설계하는 스프라이트 애니메이터입니다.",
+    "",
+    "[첨부 이미지의 역할]",
+    "1번 이미지는 1차 요청에서 완성한 기준 픽셀 마스터입니다. 얼굴, 실루엣, 색, 의상, 로고와 고유 장식을 프레임마다 그대로 유지하세요.",
+    `2번 이미지는 ${frameCount}컷이 가로 한 파일에 들어 있는 대기 포즈 가이드입니다. 캐릭터의 생김새가 아니라 각 칸의 자세 변화와 순서만 참고하세요.`,
+    "",
+    "[할 일]",
+    `기준 픽셀 마스터가 제자리에서 아주 가볍게 숨 쉬는 ${frameCount}칸 가로 스프라이트시트를 만드세요.`,
+    "",
+    "[출력 규격]",
+    `- 정확히 ${frameCount}칸을 같은 너비로 가로 한 줄에 배치`,
+    "- 각 칸의 캔버스 크기, 발 기준선, 중심축과 여백을 동일하게 유지",
+    "- 통째로 위아래로 이동시키거나 찌그러뜨리지 말고 몸통과 표정에만 1픽셀 안팎의 미세한 변화 사용",
+    "- 첫 칸과 마지막 칸이 자연스럽게 이어지는 반복 동작",
+    "- 안티앨리어싱, 블러, 반투명 그림자, 글자, 번호, 칸 사이 여백 금지",
+    "- 캐릭터에 쓰이지 않은 강한 대비 단색 배경 하나를 모든 칸에 동일하게 사용",
+    "- 결과는 설명이나 비교판 없이 가로 스프라이트시트 이미지 한 장만 출력",
+    "",
+    "[중요]",
+    "새 캐릭터를 만들거나 가이드 속 도형의 외형을 복사하지 마세요. 1번 이미지의 같은 캐릭터만 네 번 그리세요.",
+    pose?.prompt ? `\n[동작 세부 규칙]\n${pose.prompt}` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -453,14 +483,18 @@ function MotionTabs({
   active,
   frames,
   onChange,
+  states = ANIMATION_STATES,
+  optional = false,
 }: {
   active: AnimationState;
   frames: FrameCollection;
   onChange: (state: AnimationState) => void;
+  states?: readonly AnimationState[];
+  optional?: boolean;
 }) {
   return (
     <div className="motion-tabs" role="tablist" aria-label="펫 동작 선택">
-      {ANIMATION_STATES.map((state) => {
+      {states.map((state) => {
         const count = frames[state].filter(Boolean).length;
         return (
           <button
@@ -472,7 +506,7 @@ function MotionTabs({
             type="button"
           >
             <span>{MOTION_META[state].label}</span>
-            <small>{count}/{frames[state].length}</small>
+            <small>{optional ? (count ? `${count}개` : "선택") : `${count}/${frames[state].length}`}</small>
           </button>
         );
       })}
@@ -655,6 +689,7 @@ function Studio() {
   });
   const bulkInputRef = useRef<HTMLInputElement>(null);
   const poseSheetInputRef = useRef<HTMLInputElement>(null);
+  const poseSheetTargetRef = useRef<AnimationState>("idle");
   const quickPetInputRef = useRef<HTMLInputElement>(null);
   const imageOperationRef = useRef({ busy: false, generation: 0 });
 
@@ -665,10 +700,11 @@ function Studio() {
       setCatalog(result);
       setCatalogLoading(false);
       const firstExample = result.examples[0];
-      const styleId = firstExample?.defaultStyleId || result.styles[0]?.id || "";
+      const styleId = result.styles[0]?.id || firstExample?.defaultStyleId || "";
+      const idlePose = result.poses.find((pose) => motionFromPoseId(pose.id) === "idle");
       setActiveExampleId(firstExample?.id ?? "");
       setActiveStyleId(styleId);
-      setActivePoseId(result.poses[0]?.id ?? "idle");
+      setActivePoseId(idlePose?.id ?? result.poses[0]?.id ?? "idle");
     });
     return () => {
       mounted = false;
@@ -691,9 +727,19 @@ function Studio() {
   const activeExample = catalog?.examples.find((item) => item.id === activeExampleId);
   const activeStyle = catalog?.styles.find((item) => item.id === activeStyleId);
   const activePose = catalog?.poses.find((item) => item.id === activePoseId);
+  const idlePose = catalog?.poses.find((item) => motionFromPoseId(item.id) === "idle")
+    ?? catalog?.poses[0];
+  const recommendedStyleId = catalog?.styles[0]?.id;
+  const activeStyleLabel = activeStyleId === recommendedStyleId
+    ? "깔끔한 기본 픽셀 64"
+    : activeStyle?.label ?? "깔끔한 기본 픽셀 64";
   const prompt = useMemo(
     () => buildPrompt(activeStyle),
     [activeStyle],
+  );
+  const posePrompt = useMemo(
+    () => buildPoseSheetPrompt(idlePose),
+    [idlePose],
   );
 
   const project = useMemo<PixelPetProject>(
@@ -728,6 +774,11 @@ function Studio() {
     () => frames[activeMotion].filter((frame): frame is FrameAsset => frame !== null),
     [activeMotion, frames],
   );
+  const idleFrameCount = frames.idle.filter(Boolean).length;
+  const idleComplete = idleFrameCount === frames.idle.length;
+  const optionalMotionCount = ANIMATION_STATES.filter(
+    (state) => state !== "idle" && frames[state].some(Boolean),
+  ).length;
   const activeFps = motionFps[activeMotion];
 
   useEffect(() => setPreviewFrameIndex(0), [activeMotion, activePreviewFrames.length]);
@@ -792,10 +843,10 @@ function Studio() {
     setBusyAction(null);
   };
 
-  const copyPrompt = async () => {
+  const copyPrompt = async (contents: string, label: string) => {
     try {
-      await navigator.clipboard.writeText(prompt);
-      notify("success", "생성 프롬프트를 복사했습니다.");
+      await navigator.clipboard.writeText(contents);
+      notify("success", `${label} 프롬프트를 복사했습니다.`);
     } catch {
       notify("error", "클립보드에 접근하지 못했습니다. 프롬프트를 직접 선택해 주세요.");
     }
@@ -857,8 +908,8 @@ function Studio() {
     }
   };
 
-  const processActiveMotionFrames = async () => {
-    const targetMotion = activeMotion;
+  const processActiveMotionFrames = async (motion: AnimationState = activeMotion) => {
+    const targetMotion = motion;
     const targets = frames[targetMotion]
       .map((frame, index) => (frame ? { frame, index } : null))
       .filter((item): item is { frame: FrameAsset; index: number } => item !== null);
@@ -1375,7 +1426,10 @@ function Studio() {
                 data-testid={`workflow-step-${item.id}`}
                 disabled={Boolean(busyAction)}
                 key={item.id}
-                onClick={() => setStep(item.id)}
+                onClick={() => {
+                  if (item.id === "frames") setActiveMotion("idle");
+                  setStep(item.id);
+                }}
                 type="button"
               >
                 <span className="workflow-sidebar__rail">
@@ -1408,8 +1462,8 @@ function Studio() {
           <section className="studio-section">
             <SectionHeading
               eyebrow="01 · GENERATION GUIDE"
-              title="AI에게 정확히 보여줄 세 가지"
-              description="캐릭터는 사용자가, 스타일과 움직임 규칙은 PixelPet이 준비합니다. 아래 레퍼런스와 프롬프트를 GPT 또는 Gemini에 함께 넣어 주세요."
+              title="준비할 것은 마스코트 이미지 1장뿐이에요"
+              description="스타일 규칙과 대기 포즈 가이드는 PixelPet이 준비합니다. 두 번의 짧은 AI 요청으로 기준 이미지와 4칸 시트를 만들 수 있어요."
               aside={
                 catalog?.isFallback ? (
                   <span className="manifest-state manifest-state--fallback"><Icon name="warning" /> 기본 안내 모드</span>
@@ -1419,16 +1473,25 @@ function Studio() {
               }
             />
 
+            <div className="guide-promise" role="note">
+              <span className="guide-promise__icon"><Icon name="check" /></span>
+              <div>
+                <strong>사용자 준비물: 마스코트 원본 1장</strong>
+                <p>측면 이미지, 스타일 이미지, 프레임별 사진은 준비하지 않아도 됩니다.</p>
+              </div>
+              <span className="guide-promise__badge">1 FILE ONLY</span>
+            </div>
+
             <div className="guide-overview">
               <article className="guide-overview__hero">
                 <span className="guide-overview__number">01</span>
                 <div className="guide-overview__icon"><Icon name="image" /></div>
                 <div>
-                  <h2>원본 마스코트</h2>
-                  <p>가장 선명한 정면 이미지와 가능하면 측면 이미지를 준비하세요.</p>
+                  <h2>원본 한 장 준비</h2>
+                  <p>정면 또는 캐릭터 특징이 가장 잘 보이는 공식 원본 한 장이면 충분해요.</p>
                 </div>
                 <ul>
-                  <li><Icon name="check" /> 로고와 장식이 가리지 않은 이미지</li>
+                  <li><Icon name="check" /> 얼굴·로고·장식이 선명한 이미지</li>
                   <li><Icon name="check" /> 기관이 허가한 공식 원본</li>
                 </ul>
               </article>
@@ -1436,169 +1499,223 @@ function Studio() {
                 <span className="guide-overview__number">02</span>
                 <div className="guide-overview__icon"><Icon name="sparkles" /></div>
                 <div>
-                  <h2>픽셀 스타일</h2>
-                  <p>캔버스와 팔레트가 정의된 검증 스타일을 하나 고르세요.</p>
+                  <h2>1차 AI 요청</h2>
+                  <p>원본 한 장과 아래 프롬프트를 넣어 기준 픽셀 마스터를 만들어요.</p>
                 </div>
-                <strong>{activeStyle?.canvas ?? "64 × 64"} <i>·</i> {activeStyle?.paletteMax ?? 16} COLORS</strong>
+                <strong>원본 1장 <i>→</i> 픽셀 마스터 1장</strong>
               </article>
               <article className="guide-overview__hero">
                 <span className="guide-overview__number">03</span>
                 <div className="guide-overview__icon"><Icon name="layers" /></div>
                 <div>
-                  <h2>포즈 시퀀스</h2>
-                  <p>형태가 아니라 관절과 무게중심만 가져오도록 안내합니다.</p>
+                  <h2>2차 AI 요청</h2>
+                  <p>마스터와 대기 포즈 가이드, 두 장만 넣어 4칸 시트를 만들어요.</p>
                 </div>
-                <strong>{activePose?.frames.length ?? 4} FRAMES <i>·</i> {activePose?.loop ? "LOOP" : "ONE SHOT"}</strong>
+                <strong>이미지 2장 <i>→</i> 4칸 시트 1장</strong>
               </article>
             </div>
 
-            <div className="guide-grid">
-              <article className="panel example-panel">
-                <div className="panel__heading">
-                  <div>
-                    <span className="panel__step">EXAMPLE PETS</span>
-                    <h2>5가지 완성 예시</h2>
-                  </div>
-                  <span className="panel__count">{catalogLoading ? "…" : catalog?.examples.length ?? 0}</span>
-                </div>
-                <div className="example-list" aria-busy={catalogLoading}>
-                  {catalog?.examples.map((example) => (
-                    <button
-                      className={activeExampleId === example.id ? "is-active" : ""}
-                      key={example.id}
-                      onClick={() => {
-                        setActiveExampleId(example.id);
-                        if (example.defaultStyleId) setActiveStyleId(example.defaultStyleId);
-                      }}
-                      type="button"
-                    >
-                      <span className="example-list__image checkerboard">
-                        <ReferenceImage
-                          fallbackSrc={example.sourceImage}
-                          label={example.name}
-                          src={example.previewImage}
-                        />
-                      </span>
-                      <span>
-                        <strong>{example.name}</strong>
-                        <small>{example.animal}</small>
-                      </span>
-                      <span className="example-list__radio"><i /></span>
-                    </button>
-                  ))}
-                </div>
-                {activeExample && <p className="example-note">{activeExample.description}</p>}
-              </article>
-
-              <article className="panel style-panel">
-                <div className="panel__heading">
-                  <div>
-                    <span className="panel__step">STYLE REFERENCE</span>
-                    <h2>스타일 선택</h2>
-                  </div>
-                </div>
-                <div className="style-list">
-                  {catalog?.styles.map((style) => (
-                    <button
-                      className={activeStyleId === style.id ? "is-active" : ""}
-                      key={style.id}
-                      onClick={() => setActiveStyleId(style.id)}
-                      type="button"
-                    >
-                      <span className="style-list__image checkerboard">
-                        <ReferenceImage label={style.label} src={style.image} />
-                      </span>
-                      <span className="style-list__copy">
-                        <strong>{style.label}</strong>
-                        <small>{style.description ?? "일관된 픽셀 클러스터와 외곽선"}</small>
-                        <em>{style.canvas ?? "64 × 64"} <i /> {style.paletteMax ?? 16}색</em>
-                      </span>
-                      <span className="style-list__check"><Icon name="check" /></span>
-                    </button>
-                  ))}
-                </div>
-                {activeStyle?.image && (
-                  <a
-                    className="reference-open-link"
-                    download
-                    href={activeStyle.image}
-                  >
-                    <Icon name="download" /> 선택한 스타일 레퍼런스 저장
-                  </a>
-                )}
-              </article>
-            </div>
-
-            <article className="panel pose-panel">
-              <div className="panel__heading panel__heading--row">
+            <article className="panel recommended-style-panel">
+              <div className="recommended-style-panel__main">
+                <span className="recommended-style-panel__icon"><Icon name="sparkles" /></span>
                 <div>
-                  <span className="panel__step">POSE REFERENCE</span>
-                  <h2>동작과 프레임 순서</h2>
+                  <span className="panel__step">AUTOMATIC STYLE</span>
+                  <h2>{activeStyleLabel} <em>추천</em></h2>
+                  <p>스타일 이미지를 첨부할 필요가 없어요. 픽셀 크기·외곽선·팔레트 규칙이 1차 프롬프트에 자동으로 들어갑니다.</p>
                 </div>
-                <div className="pose-selector" role="tablist" aria-label="포즈 레퍼런스 선택">
-                  {catalog?.poses.map((pose) => (
-                    <button
-                      aria-selected={activePoseId === pose.id}
-                      className={activePoseId === pose.id ? "is-active" : ""}
-                      key={pose.id}
-                      onClick={() => {
-                        setActivePoseId(pose.id);
-                        const nextMotion = motionFromPoseId(pose.id);
-                        if (nextMotion) setActiveMotion(nextMotion);
-                      }}
-                      role="tab"
-                      type="button"
-                    >
-                      {pose.label}
-                    </button>
-                  ))}
-                </div>
+                <span className="recommended-style-panel__spec">
+                  {activeStyle?.canvas ?? "64 × 64"} · 최대 {activeStyle?.paletteMax ?? 16}색
+                </span>
               </div>
-              <div className="pose-frames">
-                {activePose?.frames.map((frame, index) => (
-                  <a
-                    className="pose-frame"
-                    download
-                    href={frame.image}
-                    key={frame.id}
-                    onClick={(event) => !frame.image && event.preventDefault()}
-                  >
-                    <span className="pose-frame__index">F{String(index + 1).padStart(2, "0")}</span>
-                    <span className="pose-frame__image checkerboard">
-                      <ReferenceImage label={`${activePose.label} ${index + 1}`} src={frame.image} />
+              {(catalog?.styles.length ?? 0) > 1 && (
+                <details className="inline-disclosure">
+                  <summary>다른 느낌 고르기 <small>선택 사항</small></summary>
+                  <div className="style-choice-list" role="group" aria-label="다른 픽셀 스타일 선택">
+                    {catalog?.styles.map((style) => {
+                      const recommended = style.id === recommendedStyleId;
+                      return (
+                        <button
+                          aria-pressed={activeStyleId === style.id}
+                          className={activeStyleId === style.id ? "is-active" : ""}
+                          key={style.id}
+                          onClick={() => setActiveStyleId(style.id)}
+                          type="button"
+                        >
+                          <span>
+                            <strong>{recommended ? "깔끔한 기본 픽셀 64" : style.label}</strong>
+                            <small>{style.description ?? "일관된 픽셀 크기와 외곽선 규칙"}</small>
+                          </span>
+                          <em>{style.canvas ?? "64 × 64"} · {style.paletteMax ?? 16}색</em>
+                          <i><Icon name="check" /></i>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </details>
+              )}
+            </article>
+
+            <article className="panel pose-guide-card">
+              <div className="pose-guide-card__preview">
+                <span className="pose-guide-card__file-label">ONE PNG · 4 CUTS</span>
+                <div className="pose-strip-preview checkerboard" aria-label="대기 포즈 가이드 한 파일 미리보기">
+                  {idlePose?.frames.map((frame, index) => (
+                    <span key={frame.id}>
+                      <ReferenceImage label={`대기 포즈 ${index + 1}`} src={frame.image} />
                     </span>
-                    <small>{frame.label}</small>
-                  </a>
-                ))}
-                {!activePose?.frames.length && (
-                  <div className="empty-inline"><Icon name="warning" /> 이 동작의 포즈 이미지가 준비 중입니다.</div>
-                )}
+                  ))}
+                  {!idlePose?.frames.length && <span className="pose-strip-preview__empty">가이드 준비 중</span>}
+                </div>
               </div>
-              <footer className="pose-panel__footer">
-                <span><i className="status-dot" /> 프레임을 누르면 원본 레퍼런스를 저장할 수 있어요.</span>
-                <span>고급 동작용 · 프레임별 생성법은 docs/prompting 참고</span>
-              </footer>
+              <div className="pose-guide-card__copy">
+                <span className="panel__step">STEP 02 · POSE GUIDE</span>
+                <h2>대기 포즈 가이드는 한 파일이에요</h2>
+                <p>F01~F04를 따로 저장하지 마세요. 아래 버튼 한 번으로 가로 4컷 PNG 하나를 받아 2차 AI 요청에 첨부하면 됩니다.</p>
+                <div className="pose-guide-card__action">
+                  <a
+                    aria-disabled={!idlePose?.guideImage}
+                    className={`button button--primary ${!idlePose?.guideImage ? "is-disabled" : ""}`}
+                    download="pixelpet-idle-pose-guide-4cuts.png"
+                    href={idlePose?.guideImage || undefined}
+                    onClick={(event) => {
+                      if (!idlePose?.guideImage) event.preventDefault();
+                    }}
+                  >
+                    <Icon name="download" /> 대기 포즈 가이드 1장 저장
+                  </a>
+                  <small>4컷이 한 파일에 들어 있습니다</small>
+                </div>
+              </div>
             </article>
 
-            <article className="prompt-panel">
-              <div className="prompt-panel__heading">
-                <div className="prompt-panel__mark"><Icon name="sparkles" /></div>
-                <div>
-                  <span>READY-TO-USE PROMPT</span>
-                  <h2>기준 픽셀 마스터 생성 프롬프트</h2>
-                  <p>원본 마스코트 → 스타일 레퍼런스 순서로 두 장만 첨부한 다음 붙여 넣으세요.</p>
+            <div className="prompt-sequence" aria-label="AI 생성 2단계 프롬프트">
+              <article className="prompt-panel">
+                <div className="prompt-panel__heading">
+                  <div className="prompt-panel__mark"><span>1</span></div>
+                  <div>
+                    <span>FIRST AI REQUEST · IMAGE 1</span>
+                    <h2>원본 한 장으로 픽셀 마스터 만들기</h2>
+                    <p>마스코트 원본 한 장만 첨부하고 복사한 프롬프트를 붙여 넣으세요.</p>
+                  </div>
+                  <button className="button button--primary" onClick={() => void copyPrompt(prompt, "1차")} type="button">
+                    <Icon name="copy" /> 1차 프롬프트 복사
+                  </button>
                 </div>
-                <button className="button button--primary" onClick={copyPrompt} type="button">
-                  <Icon name="copy" /> 프롬프트 복사
-                </button>
+                <details className="prompt-panel__details">
+                  <summary>프롬프트 내용 미리보기</summary>
+                  <pre tabIndex={0}>{prompt}</pre>
+                </details>
+              </article>
+
+              <article className="prompt-panel prompt-panel--second">
+                <div className="prompt-panel__heading">
+                  <div className="prompt-panel__mark"><span>2</span></div>
+                  <div>
+                    <span>SECOND AI REQUEST · IMAGES 2</span>
+                    <h2>마스터와 가이드로 4칸 시트 만들기</h2>
+                    <p>픽셀 마스터 1장 + 대기 포즈 가이드 1장, 총 두 장만 첨부하세요.</p>
+                  </div>
+                  <button className="button button--primary" onClick={() => void copyPrompt(posePrompt, "2차")} type="button">
+                    <Icon name="copy" /> 2차 프롬프트 복사
+                  </button>
+                </div>
+                <details className="prompt-panel__details">
+                  <summary>프롬프트 내용 미리보기</summary>
+                  <pre tabIndex={0}>{posePrompt}</pre>
+                </details>
+              </article>
+            </div>
+
+            <details className="panel advanced-guide-disclosure">
+              <summary>
+                <span><Icon name="layers" /></span>
+                <div><strong>추가 동작·개별 프레임 보기</strong><small>걷기, 점프, 잠자기, 반응은 첫 펫을 완성한 뒤 사용하세요.</small></div>
+                <Icon name="arrow" />
+              </summary>
+              <div className="advanced-guide-disclosure__content">
+                <div className="panel__heading">
+                  <div>
+                    <span className="panel__step">ADVANCED POSE REFERENCES</span>
+                    <h2>동작과 개별 프레임</h2>
+                  </div>
+                  <div className="pose-selector" role="tablist" aria-label="고급 포즈 레퍼런스 선택">
+                    {catalog?.poses.map((pose) => (
+                      <button
+                        aria-selected={activePoseId === pose.id}
+                        className={activePoseId === pose.id ? "is-active" : ""}
+                        key={pose.id}
+                        onClick={() => {
+                          setActivePoseId(pose.id);
+                          const nextMotion = motionFromPoseId(pose.id);
+                          if (nextMotion) setActiveMotion(nextMotion);
+                        }}
+                        role="tab"
+                        type="button"
+                      >
+                        {pose.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="pose-frames">
+                  {activePose?.frames.map((frame, index) => (
+                    <a
+                      className="pose-frame"
+                      download
+                      href={frame.image}
+                      key={frame.id}
+                      onClick={(event) => !frame.image && event.preventDefault()}
+                    >
+                      <span className="pose-frame__index">F{String(index + 1).padStart(2, "0")}</span>
+                      <span className="pose-frame__image checkerboard">
+                        <ReferenceImage label={`${activePose.label} ${index + 1}`} src={frame.image} />
+                      </span>
+                      <small>{frame.label}</small>
+                    </a>
+                  ))}
+                  {!activePose?.frames.length && (
+                    <div className="empty-inline"><Icon name="warning" /> 이 동작의 포즈 이미지가 준비 중입니다.</div>
+                  )}
+                </div>
               </div>
-              <pre tabIndex={0}>{prompt}</pre>
-            </article>
+            </details>
+
+            <details className="panel examples-disclosure">
+              <summary>
+                <span><Icon name="image" /></span>
+                <div><strong>완성 결과 예시 보기</strong><small>예시 이미지는 AI 요청에 첨부하지 않습니다.</small></div>
+                <span className="panel__count">{catalogLoading ? "…" : catalog?.examples.length ?? 0}</span>
+              </summary>
+              <div className="example-list" aria-busy={catalogLoading}>
+                {catalog?.examples.map((example) => (
+                  <button
+                    className={activeExampleId === example.id ? "is-active" : ""}
+                    key={example.id}
+                    onClick={() => setActiveExampleId(example.id)}
+                    type="button"
+                  >
+                    <span className="example-list__image checkerboard">
+                      <ReferenceImage
+                        fallbackSrc={example.sourceImage}
+                        label={example.name}
+                        src={example.previewImage}
+                      />
+                    </span>
+                    <span>
+                      <strong>{example.name}</strong>
+                      <small>{example.animal}</small>
+                    </span>
+                    <span className="example-list__radio"><i /></span>
+                  </button>
+                ))}
+              </div>
+              {activeExample && <p className="example-note">{activeExample.description}</p>}
+            </details>
 
             <div className="section-footer">
-              <p><Icon name="check" /> 초보자는 완성된 기준 픽셀 마스터 한 장을 3단계 빠른 자동 완성에 넣으세요. 포즈별 제작은 고급 경로입니다.</p>
-              <button className="button button--primary button--large" onClick={() => setStep("remove")} type="button">
-                한 장으로 빠르게 만들기 <Icon name="arrow" />
+              <p><Icon name="check" /> 2차 AI가 만든 가로 4칸 이미지 한 장만 다음 단계에 넣으면 됩니다.</p>
+              <button className="button button--primary button--large" onClick={() => { setActiveMotion("idle"); setStep("frames"); }} type="button">
+                4칸 시트 가져오기 <Icon name="arrow" />
               </button>
             </div>
           </section>
@@ -1608,36 +1725,35 @@ function Studio() {
           <section className="studio-section">
             <SectionHeading
               eyebrow="02 · IMPORT FRAMES"
-              title="만든 이미지를 동작별로 채우세요"
-              description="가장 쉬운 방법은 포즈를 한 줄로 나란히 만든 시트 한 장을 가져오는 것입니다. 개별 이미지도 슬롯에 놓을 수 있어요."
+              title="대기 포즈 시트 한 장만 가져오세요"
+              description="2차 AI가 만든 가로 4칸 이미지 하나를 선택하면 앱이 네 프레임으로 자동 분리합니다. 처음부터 프레임별 파일을 준비할 필요가 없어요."
               aside={<span className="counter-pill"><strong>{importedCount}</strong> FRAME{importedCount === 1 ? "" : "S"}</span>}
             />
-            <MotionTabs active={activeMotion} frames={frames} onChange={setActiveMotion} />
-            <article className="panel frames-panel">
+            <article className="panel frames-panel frames-panel--beginner">
               <div className="frames-panel__heading">
                 <div className="frames-panel__copy">
-                  <span>{MOTION_META[activeMotion].shortLabel}</span>
-                  <h2>{MOTION_META[activeMotion].label} 프레임</h2>
-                  <p>{MOTION_META[activeMotion].description}</p>
+                  <span>BEGINNER · IDLE</span>
+                  <h2>대기 포즈 시트 1장</h2>
+                  <p>한 파일 안에 같은 너비의 4컷이 가로로 붙어 있어야 합니다.</p>
                 </div>
                 <div className="frames-panel__actions">
                   <button
                     className="button button--soft"
                     data-testid="pose-sheet-import"
                     disabled={Boolean(busyAction)}
-                    onClick={() => poseSheetInputRef.current?.click()}
+                    onClick={() => {
+                      poseSheetTargetRef.current = "idle";
+                      poseSheetInputRef.current?.click();
+                    }}
                     type="button"
                   >
-                    <Icon name="layers" /> 포즈 시트 한 장 가져오기
-                  </button>
-                  <button className="button button--soft" disabled={Boolean(busyAction)} onClick={() => bulkInputRef.current?.click()} type="button">
-                    <Icon name="upload" /> 개별 포즈 여러 장 가져오기
+                    <Icon name="layers" /> 대기 포즈 시트 한 장 가져오기
                   </button>
                   <button
                     className="button button--primary"
                     data-testid="process-motion-frames"
-                    disabled={Boolean(busyAction) || activePreviewFrames.length === 0}
-                    onClick={() => void processActiveMotionFrames()}
+                    disabled={Boolean(busyAction) || !frames.idle.some(Boolean)}
+                    onClick={() => void processActiveMotionFrames("idle")}
                     type="button"
                   >
                     <Icon name="sparkles" /> 이 동작 한 번에 정리
@@ -1650,7 +1766,7 @@ function Studio() {
                   disabled={Boolean(busyAction)}
                   onChange={(event: ChangeEvent<HTMLInputElement>) => {
                     const file = event.target.files?.[0];
-                    if (file) void importPoseSheet(activeMotion, file);
+                    if (file) void importPoseSheet(poseSheetTargetRef.current, file);
                     event.target.value = "";
                   }}
                   ref={poseSheetInputRef}
@@ -1674,6 +1790,14 @@ function Studio() {
                   ref={bulkInputRef}
                   type="file"
                 />
+              </div>
+              <div className="idle-sheet-drop" data-has-frames={frames.idle.some(Boolean) ? "true" : "false"}>
+                <span className="idle-sheet-drop__icon"><Icon name={frames.idle.some(Boolean) ? "check" : "layers"} /></span>
+                <div>
+                  <strong>{frames.idle.some(Boolean) ? "대기 시트를 4컷으로 나눴어요" : "프레임 파일 4개가 아니라 시트 파일 1개예요"}</strong>
+                  <p>{frames.idle.some(Boolean) ? `${frames.idle.filter(Boolean).length}/4컷을 가져왔습니다. 이제 ‘이 동작 한 번에 정리’를 누르세요.` : "가로 4칸 PNG·JPG·WebP 한 장을 선택하면 왼쪽부터 자동으로 나눕니다."}</p>
+                </div>
+                <span className="idle-sheet-drop__badge">1 FILE → 4 FRAMES</span>
               </div>
               <div
                 className={`motion-batch-status motion-batch-status--${motionBatch.phase}`}
@@ -1699,26 +1823,67 @@ function Studio() {
                   )}
                 </div>
               </div>
-              <div className="frame-grid">
-                {frames[activeMotion].map((frame, index) => (
-                  <FrameSlot
-                    disabled={Boolean(busyAction)}
-                    frame={frame}
-                    index={index}
-                    key={`${activeMotion}-${index}`}
-                    onImport={(filesToAdd) => void importFiles(activeMotion, index, filesToAdd)}
-                    onRemove={() => removeFrame(activeMotion, index)}
-                    onSelect={() => setSelectedFrame({ state: activeMotion, index })}
-                    selected={selectedFrame?.state === activeMotion && selectedFrame.index === index}
-                    state={activeMotion}
-                  />
-                ))}
-              </div>
               <div className="frames-panel__tips">
-                <span><Icon name="layers" /> 개별 프레임을 따로 자르지 않고 전체 포즈의 공통 범위로 맞춰 흔들림을 줄여요.</span>
-                <span>포즈 시트: 가로 {frames[activeMotion].length}칸 같은 너비 · 전체/각 칸 최대 20MB · 4MP · 4096px</span>
+                <span><Icon name="layers" /> 앱이 4컷 전체의 공통 범위를 계산해 캐릭터 흔들림을 줄여요.</span>
+                <span>가로 4칸 같은 너비 · 전체/각 칸 최대 20MB · 4MP · 4096px</span>
               </div>
             </article>
+
+            <details className="panel advanced-frames-disclosure">
+              <summary>
+                <span><Icon name="layers" /></span>
+                <div><strong>추가 동작·개별 프레임 고급 설정</strong><small>걷기·점프·잠자기·반응 또는 프레임별 교체가 필요할 때만 여세요.</small></div>
+                <Icon name="arrow" />
+              </summary>
+              <div className="advanced-frames-disclosure__content">
+                <MotionTabs active={activeMotion} frames={frames} onChange={setActiveMotion} />
+                <div className="advanced-frames-toolbar">
+                  <div>
+                    <strong>{MOTION_META[activeMotion].label} 고급 편집</strong>
+                    <small>{MOTION_META[activeMotion].description}</small>
+                  </div>
+                  <div>
+                    <button
+                      className="button button--soft"
+                      disabled={Boolean(busyAction)}
+                      onClick={() => {
+                        poseSheetTargetRef.current = activeMotion;
+                        poseSheetInputRef.current?.click();
+                      }}
+                      type="button"
+                    >
+                      <Icon name="layers" /> 선택 동작 시트 가져오기
+                    </button>
+                    <button className="button button--soft" disabled={Boolean(busyAction)} onClick={() => bulkInputRef.current?.click()} type="button">
+                      <Icon name="upload" /> 개별 이미지 여러 장 가져오기
+                    </button>
+                    <button
+                      className="button button--primary"
+                      disabled={Boolean(busyAction) || activePreviewFrames.length === 0}
+                      onClick={() => void processActiveMotionFrames()}
+                      type="button"
+                    >
+                      <Icon name="sparkles" /> 선택 동작 정리
+                    </button>
+                  </div>
+                </div>
+                <div className="frame-grid">
+                  {frames[activeMotion].map((frame, index) => (
+                    <FrameSlot
+                      disabled={Boolean(busyAction)}
+                      frame={frame}
+                      index={index}
+                      key={`${activeMotion}-${index}`}
+                      onImport={(filesToAdd) => void importFiles(activeMotion, index, filesToAdd)}
+                      onRemove={() => removeFrame(activeMotion, index)}
+                      onSelect={() => setSelectedFrame({ state: activeMotion, index })}
+                      selected={selectedFrame?.state === activeMotion && selectedFrame.index === index}
+                      state={activeMotion}
+                    />
+                  ))}
+                </div>
+              </div>
+            </details>
             <div className="section-footer">
               <p>{selectedAsset ? <><Icon name="check" /> {selectedAsset.name} 선택됨</> : <><Icon name="warning" /> 프레임을 선택하면 다음 단계에서 바로 편집할 수 있어요.</>}</p>
               <button className="button button--primary button--large" disabled={Boolean(busyAction) || !importedCount} onClick={() => setStep("remove")} type="button">
@@ -1935,7 +2100,35 @@ function Studio() {
               description="동작별 루프와 프레임 속도, 실제 데스크톱에서 보일 픽셀 배율을 조정하세요."
               aside={<span className="counter-pill"><strong>{activeFps}</strong> FPS</span>}
             />
-            <MotionTabs active={activeMotion} frames={frames} onChange={setActiveMotion} />
+            <div className="preview-motion-picker">
+              <MotionTabs
+                active={activeMotion}
+                frames={frames}
+                onChange={setActiveMotion}
+                states={["idle"]}
+              />
+              <p><Icon name="check" /> 첫 펫은 대기 4컷만 확인하면 됩니다.</p>
+            </div>
+            <details
+              className="preview-optional-motions"
+              open={activeMotion !== "idle" ? true : undefined}
+            >
+              <summary>
+                <span><Icon name="layers" /></span>
+                <div>
+                  <strong>선택 동작 미리보기</strong>
+                  <small>걷기·점프·잠자기·반응은 없어도 됩니다.</small>
+                </div>
+                <Icon name="arrow" />
+              </summary>
+              <MotionTabs
+                active={activeMotion}
+                frames={frames}
+                onChange={setActiveMotion}
+                optional
+                states={ANIMATION_STATES.filter((state) => state !== "idle")}
+              />
+            </details>
             <div className="preview-layout">
               <article className="preview-stage-panel">
                 <div className="preview-stage__toolbar">
@@ -2043,8 +2236,10 @@ function Studio() {
           <section className="studio-section publish-section">
             <SectionHeading
               eyebrow="05 · READY TO PLAY"
-              title="픽셀 펫이 완성됐어요"
-              description="데스크톱 위에서 바로 실행하거나 프로젝트와 범용 스프라이트 자산으로 안전하게 보관하세요."
+              title={idleComplete ? "픽셀 펫이 완성됐어요" : "대기 4컷을 채우면 완성돼요"}
+              description={idleComplete
+                ? "데스크톱 위에서 바로 실행하거나 프로젝트와 범용 스프라이트 자산으로 안전하게 보관하세요."
+                : "걷기·점프 같은 추가 동작은 필수가 아닙니다. 먼저 대기 시트 한 장만 준비하세요."}
               aside={<span className={`run-state run-state--${petState?.status ?? "stopped"}`}><span className="status-dot" /> {petState?.status === "running" ? "RUNNING" : petState?.status === "paused" ? "PAUSED" : "READY"}</span>}
             />
             <div className="publish-hero">
@@ -2090,15 +2285,17 @@ function Studio() {
               </article>
             </div>
 
-            <div className="readiness-panel">
-              <div><span className="readiness-panel__mark"><Icon name="check" /></span><div><strong>펫 자산 검사</strong><small>실행 전에 빠진 동작을 확인해 보세요.</small></div></div>
+            <div className={`readiness-panel${idleComplete ? "" : " is-incomplete"}`} data-testid="beginner-readiness">
+              <div><span className="readiness-panel__mark"><Icon name={idleComplete ? "check" : "warning"} /></span><div><strong>첫 펫 완성 조건</strong><small>대기 4컷만 있으면 됩니다.</small></div></div>
               <ul>
-                {ANIMATION_STATES.map((state) => (
-                  <li className={frames[state].some(Boolean) ? "is-ready" : ""} key={state}>
-                    <span>{frames[state].some(Boolean) ? <Icon name="check" /> : <Icon name="warning" />}</span>
-                    <div><strong>{MOTION_META[state].label}</strong><small>{frames[state].filter(Boolean).length} frames</small></div>
-                  </li>
-                ))}
+                <li className={idleComplete ? "is-ready" : ""}>
+                  <span>{idleComplete ? <Icon name="check" /> : <Icon name="warning" />}</span>
+                  <div><strong>대기</strong><small>{idleFrameCount} / {frames.idle.length} frames</small></div>
+                </li>
+                <li className="is-optional">
+                  <span><Icon name="sparkles" /></span>
+                  <div><strong>추가 동작</strong><small>{optionalMotionCount ? `${optionalMotionCount}개 추가됨` : "선택 사항"}</small></div>
+                </li>
               </ul>
             </div>
           </section>

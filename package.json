@@ -24,8 +24,10 @@
   "scripts": {
     "prompts:generate": "node scripts/generate-prompt-catalog.mjs",
     "prompts:check": "node scripts/generate-prompt-catalog.mjs --check",
+    "references:styles": "node scripts/generate-style-boards.mjs",
+    "references:guides": "node scripts/generate-pose-guides.mjs",
     "prepare:legal": "node scripts/prepare-legal-assets.mjs",
-    "prepare:assets": "node scripts/sync-reference-kits.mjs && node scripts/prepare-background-removal.mjs && npm run prepare:legal",
+    "prepare:assets": "npm run references:styles && npm run references:guides && node scripts/sync-reference-kits.mjs && node scripts/prepare-background-removal.mjs && npm run prepare:legal",
     "legal:check": "node scripts/check-legal-compliance.mjs",
     "legal:release-check": "node scripts/check-legal-compliance.mjs --release",
     "dev": "npm run prepare:assets && concurrently -k -n renderer,electron-ts,electron -c cyan,magenta,yellow \"vite --host 127.0.0.1\" \"tsc -p tsconfig.electron.json --watch --preserveWatchOutput\" \"wait-on tcp:5173 file:dist-electron/main/index.js && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",

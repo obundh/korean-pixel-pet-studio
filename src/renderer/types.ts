@@ -51,6 +51,7 @@ export type PoseReferenceSet = {
   id: string;
   label: string;
   loop: boolean;
+  guideImage?: string;
   frames: ReferenceAsset[];
   durationsMs: number[];
   prompt?: string;
