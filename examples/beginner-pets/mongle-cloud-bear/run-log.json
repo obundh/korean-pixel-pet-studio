@@ -1,0 +1,346 @@
+{
+  "schemaVersion": "2.0.0",
+  "sampleId": "mongle-cloud-bear",
+  "public": true,
+  "startedAt": "2026-07-16T12:53:35.464Z",
+  "completedAt": "2026-07-16T12:53:38.656Z",
+  "source": {
+    "path": "examples/beginner-pets/mongle-cloud-bear/ai-idle-sheet-chroma.png",
+    "sha256": "88e8733fd62d6c08ef4d45c80be4fe4065a8831dfacd96e21b023f2126c7dea5",
+    "bytes": 1428410,
+    "sheet": {
+      "width": 2172,
+      "height": 724,
+      "layout": "one horizontal row / four equal cells / left-to-right",
+      "cellWidth": 543,
+      "cellHeight": 724
+    }
+  },
+  "pipeline": {
+    "app": "PixelPet Studio",
+    "appVersion": "0.2.0",
+    "mode": "hidden-electron-browser-mode",
+    "entryPoint": "Step 2 / pose-sheet import and shared motion-frame processing",
+    "imageProcessing": "PixelPet Studio UI only after image generation; browser-canvas equal split, flat-chroma cleanup, shared alignment, export",
+    "sourceFrameSizes": [
+      {
+        "width": 543,
+        "height": 724
+      },
+      {
+        "width": 543,
+        "height": 724
+      },
+      {
+        "width": 543,
+        "height": 724
+      },
+      {
+        "width": 543,
+        "height": 724
+      }
+    ],
+    "backgroundRemoval": "flat-chroma-direct",
+    "backgroundRemovalModel": "not used for the uniform prompt background",
+    "flatChromaPostprocess": {
+      "applied": true,
+      "keyRgb": [
+        233,
+        10,
+        222
+      ],
+      "operations": [
+        "key-distance matte",
+        "despill",
+        "HSV hue and chroma-direction residue detection",
+        "exterior-boundary nearest-foreground color repair",
+        "source and final-canvas fringe pass",
+        "pixel hard-alpha"
+      ]
+    },
+    "fit": "robust body-row anchor stabilization with capped correction / shared union alpha bounds / one common scale and placement / nearest-neighbor",
+    "idlePreset": [
+      "AI-authored neutral",
+      "AI-authored inhale",
+      "AI-authored local-part transition",
+      "AI-authored exhale"
+    ],
+    "canvas": {
+      "width": 64,
+      "height": 64
+    },
+    "frameDiagnostics": [
+      {
+        "label": "mongle-cloud-bear#idle-1",
+        "width": 64,
+        "height": 64,
+        "foregroundPixels": 1539,
+        "opaquePixels": 1539,
+        "softAlphaPixels": 0,
+        "boundaryPixels": 222,
+        "chromaFringePixels": 0,
+        "chromaFringeLocations": [],
+        "alphaBounds": {
+          "x": 14,
+          "y": 5,
+          "width": 36,
+          "height": 54
+        },
+        "centroid": {
+          "x": 32.3304,
+          "y": 31.9237
+        },
+        "baselineY": 58
+      },
+      {
+        "label": "mongle-cloud-bear#idle-2",
+        "width": 64,
+        "height": 64,
+        "foregroundPixels": 1530,
+        "opaquePixels": 1530,
+        "softAlphaPixels": 0,
+        "boundaryPixels": 231,
+        "chromaFringePixels": 0,
+        "chromaFringeLocations": [],
+        "alphaBounds": {
+          "x": 14,
+          "y": 5,
+          "width": 36,
+          "height": 54
+        },
+        "centroid": {
+          "x": 32.368,
+          "y": 31.9608
+        },
+        "baselineY": 58
+      },
+      {
+        "label": "mongle-cloud-bear#idle-3",
+        "width": 64,
+        "height": 64,
+        "foregroundPixels": 1522,
+        "opaquePixels": 1522,
+        "softAlphaPixels": 0,
+        "boundaryPixels": 226,
+        "chromaFringePixels": 0,
+        "chromaFringeLocations": [],
+        "alphaBounds": {
+          "x": 14,
+          "y": 6,
+          "width": 36,
+          "height": 53
+        },
+        "centroid": {
+          "x": 32.2372,
+          "y": 32.1741
+        },
+        "baselineY": 58
+      },
+      {
+        "label": "mongle-cloud-bear#idle-4",
+        "width": 64,
+        "height": 64,
+        "foregroundPixels": 1514,
+        "opaquePixels": 1514,
+        "softAlphaPixels": 0,
+        "boundaryPixels": 227,
+        "chromaFringePixels": 0,
+        "chromaFringeLocations": [],
+        "alphaBounds": {
+          "x": 14,
+          "y": 6,
+          "width": 36,
+          "height": 53
+        },
+        "centroid": {
+          "x": 32.3487,
+          "y": 32.2259
+        },
+        "baselineY": 58
+      }
+    ],
+    "transitions": [
+      {
+        "from": 0,
+        "to": 1,
+        "centroidDistance": 0.0528,
+        "centroidJumpRatio": 0.0008,
+        "baselineDistance": 0,
+        "baselineJumpRatio": 0
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "centroidDistance": 0.2502,
+        "centroidJumpRatio": 0.0039,
+        "baselineDistance": 0,
+        "baselineJumpRatio": 0
+      },
+      {
+        "from": 2,
+        "to": 3,
+        "centroidDistance": 0.1229,
+        "centroidJumpRatio": 0.0019,
+        "baselineDistance": 0,
+        "baselineJumpRatio": 0
+      },
+      {
+        "from": 3,
+        "to": 0,
+        "centroidDistance": 0.3028,
+        "centroidJumpRatio": 0.0047,
+        "baselineDistance": 0,
+        "baselineJumpRatio": 0
+      }
+    ],
+    "processingDetail": "공통 좌표 정리 완료 · 4장을 64 × 64 공통 좌표로 정렬했습니다. 단색 배경 4장 직접 정리",
+    "fps": 4,
+    "motionFps": {
+      "idle": 4,
+      "walk": 8,
+      "jump": 8,
+      "sleep": 4,
+      "reaction": 8
+    },
+    "scale": 3
+  },
+  "qualityGate": {
+    "passed": true,
+    "thresholds": {
+      "maxSoftAlphaPixels": 0,
+      "maxChromaFringePixels": 0,
+      "maxCentroidJumpRatio": 0.05,
+      "maxBaselineJumpRatio": 0.04
+    },
+    "violations": [],
+    "checks": [
+      "no whole-character squash/stretch",
+      "no excessive centroid or baseline jump",
+      "no soft alpha",
+      "no hue-preserving chroma fringe",
+      "last-to-first loop boundary included"
+    ]
+  },
+  "appExports": {
+    "project": "examples/beginner-pets/mongle-cloud-bear/mongle-cloud-bear.pixelpet",
+    "spriteSheet": "examples/beginner-pets/mongle-cloud-bear/mongle-cloud-bear-spritesheet.png",
+    "projectExportButton": "export-project-json",
+    "spriteSheetExportButton": "export-spritesheet",
+    "downloadTransport": "Electron will-download"
+  },
+  "generatedFrames": [
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-01.png",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-02.png",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-03.png",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-04.png"
+  ],
+  "preview": "examples/beginner-pets/mongle-cloud-bear/app-preview.png",
+  "desktopPetVerification": {
+    "status": "running",
+    "animation": "idle",
+    "size": {
+      "width": 192,
+      "height": 192
+    },
+    "position": {
+      "x": 1504,
+      "y": 826
+    },
+    "windowVisible": true,
+    "alwaysOnTop": true,
+    "motionDriver": "frames",
+    "expectedLoop": [
+      0,
+      1,
+      2,
+      3,
+      0
+    ],
+    "observedLoop": [
+      0,
+      1,
+      2,
+      3,
+      0
+    ],
+    "intervalsMs": [
+      265,
+      254,
+      250,
+      251
+    ],
+    "captures": [
+      {
+        "index": 0,
+        "atMs": 25,
+        "capture": {
+          "width": 384,
+          "height": 384
+        },
+        "nonTransparentPixels": 55404,
+        "captureSha256": "0d57e022043e9d18aeb054529f833caf0aecf22073def9d68169abebb7d02d33"
+      },
+      {
+        "index": 1,
+        "atMs": 290,
+        "capture": {
+          "width": 384,
+          "height": 384
+        },
+        "nonTransparentPixels": 55080,
+        "captureSha256": "fec739332c94f9049295ff535b6916e6980c5bfd412e2ca6936f31a31932f472"
+      },
+      {
+        "index": 2,
+        "atMs": 544,
+        "capture": {
+          "width": 384,
+          "height": 384
+        },
+        "nonTransparentPixels": 54792,
+        "captureSha256": "ea27350a48de1041bf40c151abb7b9ccf8cc7216693e6cc5fd8047fe00d70dd7"
+      },
+      {
+        "index": 3,
+        "atMs": 794,
+        "capture": {
+          "width": 384,
+          "height": 384
+        },
+        "nonTransparentPixels": 54504,
+        "captureSha256": "3dec7ece6d2ca815e220dce32041a2d4bd97c95d336ab83a1cd76f4793cb52e7"
+      },
+      {
+        "index": 0,
+        "atMs": 1045,
+        "capture": {
+          "width": 384,
+          "height": 384
+        },
+        "nonTransparentPixels": 55404,
+        "captureSha256": "0d57e022043e9d18aeb054529f833caf0aecf22073def9d68169abebb7d02d33"
+      }
+    ],
+    "verificationPath": "exported project -> WindowManager.startPet -> chronological visible captures"
+  },
+  "reproducibility": {
+    "deterministic": false,
+    "reason": "The image-generation step, frame UUIDs, timestamps, and animated captures can vary.",
+    "stableInputs": "The approved pose sheet SHA-256, app version, processing settings, quality diagnostics, and completed output hashes are recorded.",
+    "runtime": {
+      "node": "24.18.0",
+      "electron": "43.1.1",
+      "chrome": "150.0.7871.114"
+    }
+  },
+  "outputSha256": {
+    "examples/beginner-pets/mongle-cloud-bear/mongle-cloud-bear.pixelpet": "9868bb54b52e3c333f000810018249f60a60d45d1c9b50df166e59b99f862f9b",
+    "examples/beginner-pets/mongle-cloud-bear/mongle-cloud-bear-spritesheet.png": "dc4498f381e1df17940c00bab257f7679ada065fbea0520d2441b2b9b5d77b7c",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-01.png": "50534b14df696d804b12dd135d7a68d0057b04454dbdbf157fc367cbc0a36350",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-02.png": "6f0f588ff9130330b37386497f20abfb6c34474c947c3860475a2bae3ee35989",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-03.png": "05566a8df1389f7ba6313c970fff1a32a53a2c17a655dd1606b3eef244732213",
+    "examples/beginner-pets/mongle-cloud-bear/generated/idle-04.png": "72539c3d2232d517a7c48efef13887bc3de0babc7e72e6a22530e4598a53f18d",
+    "examples/beginner-pets/mongle-cloud-bear/app-preview.png": "c5ac2d6ceae39fa1ee2ef8101f2804fbba273ac383b428a39b2ff0ef463834f8"
+  },
+  "rightsBoundary": "Original public sample assets created for this repository."
+}

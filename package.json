@@ -1,18 +1,18 @@
 {
   "name": "pixel-pet-studio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Turn any mascot into a transparent, animated desktop pixel pet.",
   "main": "dist-electron/main/index.js",
   "author": "obundh",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "https://github.com/obundh/pixel-pet-studio.git"
+    "url": "https://github.com/obundh/korean-pixel-pet-studio.git"
   },
-  "homepage": "https://github.com/obundh/pixel-pet-studio#readme",
+  "homepage": "https://github.com/obundh/korean-pixel-pet-studio#readme",
   "bugs": {
-    "url": "https://github.com/obundh/pixel-pet-studio/issues"
+    "url": "https://github.com/obundh/korean-pixel-pet-studio/issues"
   },
   "keywords": [
     "pixel-art",
@@ -24,15 +24,26 @@
   "scripts": {
     "prompts:generate": "node scripts/generate-prompt-catalog.mjs",
     "prompts:check": "node scripts/generate-prompt-catalog.mjs --check",
-    "prepare:assets": "node scripts/sync-reference-kits.mjs && node scripts/prepare-background-removal.mjs",
+    "references:styles": "node scripts/generate-style-boards.mjs",
+    "references:guides": "node scripts/generate-pose-guides.mjs",
+    "prepare:legal": "node scripts/prepare-legal-assets.mjs",
+    "prepare:assets": "npm run references:styles && npm run references:guides && node scripts/sync-reference-kits.mjs && node scripts/prepare-background-removal.mjs && npm run prepare:legal",
+    "legal:check": "node scripts/check-legal-compliance.mjs",
+    "legal:release-check": "node scripts/check-legal-compliance.mjs --release",
     "dev": "npm run prepare:assets && concurrently -k -n renderer,electron-ts,electron -c cyan,magenta,yellow \"vite --host 127.0.0.1\" \"tsc -p tsconfig.electron.json --watch --preserveWatchOutput\" \"wait-on tcp:5173 file:dist-electron/main/index.js && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "quality:frames": "node scripts/check-frame-quality.mjs",
+    "smoke:quick-pet": "cross-env ELECTRON_RUN_AS_NODE= electron scripts/smoke-quick-pet.cjs",
+    "smoke:quick-pet:ci": "cross-env ELECTRON_RUN_AS_NODE= electron --no-sandbox scripts/smoke-quick-pet.cjs",
+    "smoke:frame-playback": "cross-env ELECTRON_RUN_AS_NODE= electron scripts/smoke-frame-playback.cjs",
+    "smoke:frame-playback:ci": "cross-env ELECTRON_RUN_AS_NODE= electron --no-sandbox scripts/smoke-frame-playback.cjs",
+    "samples:build": "npm run build && cross-env ELECTRON_RUN_AS_NODE= electron scripts/build-beginner-pets.cjs && npm run quality:frames",
     "build": "npm run prepare:assets && npm run typecheck && vite build && tsc -p tsconfig.electron.json",
-    "dist": "npm run build && electron-builder --publish never",
-    "dist:mac": "npm run build && electron-builder --mac dmg zip --x64 --arm64 --publish never",
-    "dist:win": "npm run build && electron-builder --win nsis portable --publish never"
+    "dist": "npm run build && npm run legal:release-check && electron-builder --publish never && npm run legal:check -- --packaged",
+    "dist:mac": "npm run build && npm run legal:release-check && electron-builder --mac dmg zip --x64 --arm64 --publish never && npm run legal:check -- --packaged",
+    "dist:win": "npm run build && npm run legal:release-check && electron-builder --win nsis portable --publish never && npm run legal:check -- --packaged"
   },
   "dependencies": {
     "@imgly/background-removal": "1.7.0",
@@ -71,6 +82,15 @@
       "dist/**/*",
       "dist-electron/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build/legal",
+        "to": "legal",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "mac": {
       "category": "public.app-category.graphics-design",

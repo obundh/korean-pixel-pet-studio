@@ -9,6 +9,17 @@ export const PET_ANIMATION_NAMES = [
 ] as const;
 
 export type PetAnimationName = (typeof PET_ANIMATION_NAMES)[number];
+export type PixelPetChromaKey = [number, number, number];
+
+export function isPixelPetChromaKey(value: unknown): value is PixelPetChromaKey {
+  return (
+    Array.isArray(value) &&
+    value.length === 3 &&
+    value.every(
+      (channel) => Number.isInteger(channel) && channel >= 0 && channel <= 255,
+    )
+  );
+}
 
 export interface PixelPetFrameAsset {
   id: string;
@@ -18,6 +29,7 @@ export interface PixelPetFrameAsset {
   width: number;
   height: number;
   backgroundRemoved: boolean;
+  chromaKey?: PixelPetChromaKey;
   updatedAt: string;
 }
 
@@ -37,10 +49,20 @@ export interface PixelPetProject {
   name: string;
   activeKitId: string;
   frames: PixelPetFrameMap;
+  /** Legacy/default playback rate retained for version-1 project compatibility. */
   fps: number;
+  /** New projects persist an independent playback rate for every motion. */
+  motionFps?: Record<PetAnimationName, number>;
   scale: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export function getPixelPetMotionFps(
+  project: PixelPetProject,
+  animation: PetAnimationName,
+): number {
+  return project.motionFps?.[animation] ?? project.fps;
 }
 
 export function createEmptyFrameMap(): PixelPetFrameMap {

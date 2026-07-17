@@ -32,7 +32,8 @@ reference-kits/
 └── images/
     ├── example-pets/
     ├── styles/
-    └── poses/
+    ├── poses/
+    └── pose-guides/                 # 동작별 프레임을 한 파일로 합친 첨부용 PNG
 ```
 
 `manifest.json`의 `assetBaseUrl`은 `/reference-kits/`다. 모든 asset entry의 `filename`은 이 경로를 기준으로 한 상대경로다. 예를 들어 `images/styles/soft-cluster-16-reference.png`의 브라우저 URL은 `/reference-kits/images/styles/soft-cluster-16-reference.png`가 된다.
@@ -40,9 +41,10 @@ reference-kits/
 ## PNG 생성 순서
 
 1. `assets.style-references.json`의 5개 자산을 생성한다. 이 자산들은 얼굴이나 동물 정체성이 없는 스타일 교정용 도형이다.
+   현재 저장소의 스타일 PNG는 생물 형태를 피한 기하학적 팔레트·외곽선 보드이며 `node scripts/generate-style-boards.mjs`로 결정론적으로 다시 만든다. 외부 생성형 AI용 대체 프롬프트는 같은 JSON에 기록한다.
 2. `assets.example-pets.json`에서 `kind: example-character-source`인 5개 자산을 생성한다.
 3. 같은 파일의 `kind: example-pixel-output` 자산을 생성한다. `referenceInputs`에 적힌 순서대로 source와 style reference를 첨부한다.
-4. 저장소에 포함된 포즈 PNG는 `node scripts/generate-pose-references.mjs`로 동일 관절·크기에서 결정론적으로 다시 만들 수 있다. 외부 생성형 AI로 변형본이 필요하면 `assets.pose-references.json`의 0번 프레임 프롬프트부터 생성하고, 나머지는 `referenceInputs`가 가리키는 기준 프레임을 첨부한다.
+4. 저장소에 포함된 포즈 PNG는 `node scripts/generate-pose-references.mjs`로 동일 관절·크기에서 결정론적으로 다시 만들 수 있다. `node scripts/generate-pose-guides.mjs`는 동작별 개별 포즈를 사용자가 한 번만 첨부할 수 있는 가로 가이드 한 장으로 합친다. 외부 생성형 AI로 변형본이 필요하면 `assets.pose-references.json`의 0번 프레임 프롬프트부터 생성하고, 나머지는 `referenceInputs`가 가리키는 기준 프레임을 첨부한다.
 5. 생성된 파일은 asset entry의 `filename`과 정확히 같은 경로에 저장한다. 프롬프트를 수정해 생성했다면 JSON도 함께 갱신해 재현성을 유지한다.
 
 각 `generationPrompt`는 그 이미지 한 장을 만들기 위한 완전한 영문 프롬프트다. `referenceInputs`가 비어 있지 않으면 배열 순서가 프롬프트의 `REFERENCE 1`, `REFERENCE 2` 순서다.
@@ -52,15 +54,17 @@ reference-kits/
 예시 펫 source/preview는 데모와 회귀 검사에만 사용한다. 사용자의 마스코트를 변환할 때 예시 펫 source를 함께 넣으면 정체성이 섞일 수 있으므로 사용하지 않는다.
 
 ```text
-사용자 캐릭터 이미지 + 선택한 style reference
+사용자 캐릭터 이미지 1장 + 선택한 스타일의 텍스트 규칙
   → 기준 픽셀 마스터 1장 확정
-기준 픽셀 마스터 + 같은 style reference + pose reference 1장
-  → 동작 프레임 1장
-프레임별 반복
-  → 프로그램에서 누끼/알파 정리, 격자 스냅, 앵커 정렬, 팔레트 검사
+기준 픽셀 마스터 1장 + 동작별 가로 pose guide 1장
+  → 같은 캐릭터의 가로 포즈 시트 1장
+포즈 시트 1장
+  → 프로그램에서 분할, 누끼/알파 정리, 공통 좌표 정렬, 팔레트 검사
 ```
 
-동작 프레임 단계에서는 원본 캐릭터보다 **확정된 기준 픽셀 마스터를 가장 강한 정체성 레퍼런스**로 사용한다. 포즈 가이드는 관절 관계와 무게 중심만 전달하며 회색 도형의 외형이나 색을 복사하면 안 된다.
+초보자 기본 흐름에서는 스타일 PNG를 AI에 첨부하지 않는다. 선택한 스타일의 수치·픽셀 규칙은 복사 프롬프트에 자동으로 포함된다. 스타일 보드는 자산 검수와 고급 실험용이다.
+
+동작 프레임 단계에서는 원본 캐릭터보다 **확정된 기준 픽셀 마스터를 가장 강한 정체성 레퍼런스**로 사용한다. 포즈 가이드는 개별 프레임 파일이 아니라 동작 전체를 합친 가로 PNG 한 장이며, 관절 관계와 무게 중심만 전달한다. 회색 도형의 외형이나 색을 결과에 복사하면 안 된다.
 
 ## 품질 게이트
 
@@ -76,8 +80,8 @@ reference-kits/
 
 ## 저작권 및 브랜드 주의
 
-키트 안의 이름, 펫 설정, 교정 도형, 스타일 규칙, 포즈 구성은 모두 이 프로젝트를 위한 오리지널 예시다. 다만 사용자가 업로드하는 기관 마스코트와 로고의 사용 권한은 업로드한 사용자 또는 운영 주체가 확인해야 한다. 저장소 전체의 배포 조건은 루트 라이선스를 따른다.
+키트 안의 이름, 펫 설정, 교정 도형, 스타일 규칙, 포즈 구성은 모두 이 프로젝트를 위한 오리지널 예시다. 이미지 자산은 프로젝트가 허락할 수 있는 권리 범위에서 [CC BY 4.0](../ASSET_LICENSE.md), JSON·설명 문서는 루트 [AGPL-3.0-or-later](../LICENSE)를 따른다. 사용자가 업로드하는 기관 마스코트와 로고에는 어느 라이선스도 적용되지 않으며, 사용·AI 업로드·변형·공개 권한은 업로드한 사용자 또는 운영 주체가 확인해야 한다.
 
 ## English summary
 
-This kit provides five original example pets, five identity-neutral original pixel styles, and 28 pose frames across idle, walk, jump, sleep, and reaction actions. Resolve every catalog `filename` relative to `/reference-kits/`. Generate assets in dependency order using each entry's exact `generationPrompt` and ordered `referenceInputs`. When converting a real user mascot, attach only the user's identity reference, the selected style reference, the approved canonical pixel master, and one pose reference—never an example pet source.
+This kit provides five original example pets, five identity-neutral geometric style boards, 28 pose frames, and one combined guide PNG per motion. Resolve every catalog `filename` relative to `/reference-kits/`. The beginner flow embeds the selected style rules in text: attach only the user's mascot for the first AI request, then attach the approved pixel master plus one combined pose guide for the second request. Individual pose frames, style-board attachments, and example-pet sources are advanced or internal resources, not beginner requirements.

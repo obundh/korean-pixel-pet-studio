@@ -83,7 +83,10 @@ describe("original reference kit", () => {
   it("keeps animation runtime entries aligned with the 28 pose assets", async () => {
     const manifest = await json<{
       runtimeCatalog: {
-        animations: Array<{ frames: Array<{ assetId: string; filename: string }> }>;
+        animations: Array<{
+          guideFilename: string;
+          frames: Array<{ assetId: string; filename: string }>;
+        }>;
       };
     }>("manifest.json");
     const poses = await json<{ assets: Asset[] }>("assets.pose-references.json");
@@ -95,6 +98,25 @@ describe("original reference kit", () => {
     expect(runtimeFrames).toHaveLength(28);
     for (const frame of runtimeFrames) {
       expect(poseById.get(frame.assetId)?.filename).toBe(frame.filename);
+    }
+
+    for (const animation of manifest.runtimeCatalog.animations) {
+      const guidePath = path.resolve(kitRoot, animation.guideFilename);
+      await expect(access(guidePath)).resolves.toBeUndefined();
+      const guide = await sharp(guidePath).metadata();
+      const frameMetadata = await Promise.all(
+        animation.frames.map((frame) =>
+          sharp(path.resolve(kitRoot, frame.filename)).metadata(),
+        ),
+      );
+      expect(guide.format, animation.guideFilename).toBe("png");
+      expect(guide.width, animation.guideFilename).toBe(
+        frameMetadata.reduce((sum, frame) => sum + (frame.width ?? 0), 0),
+      );
+      expect(guide.height, animation.guideFilename).toBe(
+        Math.max(...frameMetadata.map((frame) => frame.height ?? 0)),
+      );
+      expect(guide.hasAlpha, animation.guideFilename).toBe(true);
     }
   });
 

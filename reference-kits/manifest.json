@@ -9,7 +9,7 @@
       "en": "A generation reference set that transfers original pixel styles and motion while preserving the user's character identity"
     },
     "copyrightPolicy": "All bundled examples, calibration subjects, style systems, and pose guides are original. They intentionally avoid named artists, copyrighted games, and recognizable franchise characters.",
-    "generatedAssetNotice": "Example and style PNGs were generated with the catalog prompts plus a flat chroma-key background-removal pass. Pose PNGs are deterministic outputs of scripts/generate-pose-references.mjs; their catalog prompts are provider-ready AI regeneration alternatives. JSON metadata is authoritative for filenames and linkage."
+    "generatedAssetNotice": "Example-pet PNGs were generated with the catalog prompts plus a flat chroma-key background-removal pass. Style-board PNGs are deterministic outputs of scripts/generate-style-boards.mjs. Pose PNGs and combined pose guides are deterministic outputs of scripts/generate-pose-references.mjs and scripts/generate-pose-guides.mjs; their catalog prompts are provider-ready AI regeneration alternatives. JSON metadata is authoritative for filenames and linkage."
   },
   "assetBaseUrl": "/reference-kits/",
   "filenameResolution": "Resolve every asset filename by appending it directly to assetBaseUrl. Filenames never begin with a slash.",
@@ -140,6 +140,7 @@
         "name": { "ko": "숨쉬기 대기", "en": "Breathing Idle" },
         "loop": true,
         "demoPetId": "nari-plum-owl",
+        "guideFilename": "images/pose-guides/idle-breathe-4-guide.png",
         "frames": [
           { "assetId": "pose.idle-breathe-4.00", "filename": "images/poses/idle-breathe-4-f00-neutral.png", "durationMs": 260 },
           { "assetId": "pose.idle-breathe-4.01", "filename": "images/poses/idle-breathe-4-f01-inhale.png", "durationMs": 260 },
@@ -152,6 +153,7 @@
         "name": { "ko": "8프레임 걷기", "en": "Eight-Frame Walk" },
         "loop": true,
         "demoPetId": "bori-cloud-fox",
+        "guideFilename": "images/pose-guides/walk-cycle-8-guide.png",
         "frames": [
           { "assetId": "pose.walk-cycle-8.00", "filename": "images/poses/walk-cycle-8-f00-left-contact.png", "durationMs": 90 },
           { "assetId": "pose.walk-cycle-8.01", "filename": "images/poses/walk-cycle-8-f01-left-recoil.png", "durationMs": 90 },
@@ -168,6 +170,7 @@
         "name": { "ko": "6프레임 점프", "en": "Six-Frame Jump Arc" },
         "loop": false,
         "demoPetId": "dodo-moon-rabbit",
+        "guideFilename": "images/pose-guides/jump-arc-6-guide.png",
         "frames": [
           { "assetId": "pose.jump-arc-6.00", "filename": "images/poses/jump-arc-6-f00-crouch.png", "durationMs": 120 },
           { "assetId": "pose.jump-arc-6.01", "filename": "images/poses/jump-arc-6-f01-takeoff.png", "durationMs": 90 },
@@ -182,6 +185,7 @@
         "name": { "ko": "잠자기 반복", "en": "Sleeping Loop" },
         "loop": true,
         "demoPetId": "chori-lemon-gecko",
+        "guideFilename": "images/pose-guides/sleep-loop-4-guide.png",
         "frames": [
           { "assetId": "pose.sleep-loop-4.00", "filename": "images/poses/sleep-loop-4-f00-settle.png", "durationMs": 320 },
           { "assetId": "pose.sleep-loop-4.01", "filename": "images/poses/sleep-loop-4-f01-exhale.png", "durationMs": 420 },
@@ -194,6 +198,7 @@
         "name": { "ko": "기쁜 반응", "en": "Happy Reaction" },
         "loop": false,
         "demoPetId": "muru-mint-axolotl",
+        "guideFilename": "images/pose-guides/happy-reaction-6-guide.png",
         "frames": [
           { "assetId": "pose.happy-reaction-6.00", "filename": "images/poses/happy-reaction-6-f00-neutral.png", "durationMs": 100 },
           { "assetId": "pose.happy-reaction-6.01", "filename": "images/poses/happy-reaction-6-f01-notice.png", "durationMs": 90 },

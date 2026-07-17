@@ -7,6 +7,10 @@ import {
   type StartPetRequest,
   type UpdatePetRequest,
 } from "../shared/ipc.js";
+import {
+  openLegalDirectory,
+  openSourceRepository,
+} from "./legal-resources.js";
 import type { ProjectFileService } from "./project-files.js";
 import type { WindowManager } from "./window-manager.js";
 
@@ -61,6 +65,14 @@ export function registerIpcHandlers(
     requireStudio(event);
     return projectFiles.export(request as ExportPetRequest);
   });
+  replaceHandler(IPC_CHANNELS.legalOpenSource, async (event) => {
+    requireStudio(event);
+    return openSourceRepository();
+  });
+  replaceHandler(IPC_CHANNELS.legalOpenDirectory, async (event) => {
+    requireStudio(event);
+    return openLegalDirectory();
+  });
 }
 
 export function unregisterIpcHandlers(): void {
@@ -72,6 +84,8 @@ export function unregisterIpcHandlers(): void {
     IPC_CHANNELS.projectSave,
     IPC_CHANNELS.projectLoad,
     IPC_CHANNELS.exportPet,
+    IPC_CHANNELS.legalOpenSource,
+    IPC_CHANNELS.legalOpenDirectory,
   ]) {
     ipcMain.removeHandler(channel);
   }

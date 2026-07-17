@@ -16,6 +16,8 @@ export type FrameAsset = {
   width: number;
   height: number;
   backgroundRemoved: boolean;
+  /** Flat background key retained so a later manual re-clean stays lossless. */
+  chromaKey?: [number, number, number];
   updatedAt: string;
 };
 
@@ -49,6 +51,7 @@ export type PoseReferenceSet = {
   id: string;
   label: string;
   loop: boolean;
+  guideImage?: string;
   frames: ReferenceAsset[];
   durationsMs: number[];
   prompt?: string;
@@ -70,6 +73,7 @@ export type ProjectSnapshot = {
   activeKitId: string;
   frames: FrameCollection;
   fps: number;
+  motionFps?: Record<AnimationState, number>;
   scale: number;
   createdAt: string;
   updatedAt: string;

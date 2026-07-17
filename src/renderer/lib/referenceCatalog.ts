@@ -290,6 +290,9 @@ export const loadReferenceCatalog = async (): Promise<ReferenceCatalog> => {
         id: asString(item.id, `pose-${index + 1}`),
         label: asLocalizedString(item.name || detail?.name, `동작 ${index + 1}`),
         loop: Boolean(item.loop ?? detail?.loop),
+        guideImage:
+          resolveUrl(baseUrl, asString(item.guideFilename) || undefined) ||
+          assetUrl(item.guideAssetId),
         frames,
         durationsMs: durations,
         prompt:
