@@ -72,6 +72,24 @@
       "dist-electron/**/*",
       "package.json"
     ],
+    "extraResources": [
+      {
+        "from": "LICENSE",
+        "to": "licenses/PixelPet-Studio-MIT-LICENSE.txt"
+      },
+      {
+        "from": "THIRD_PARTY_NOTICES.md",
+        "to": "licenses/THIRD_PARTY_NOTICES.md"
+      },
+      {
+        "from": "node_modules/@imgly/background-removal/LICENSE.md",
+        "to": "licenses/IMG.LY-background-removal-AGPL-3.0.md"
+      },
+      {
+        "from": "node_modules/@imgly/background-removal/ThirdPartyLicenses.json",
+        "to": "licenses/IMG.LY-background-removal-ThirdPartyLicenses.json"
+      }
+    ],
     "mac": {
       "category": "public.app-category.graphics-design",
       "target": [

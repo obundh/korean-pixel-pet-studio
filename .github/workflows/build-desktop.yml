@@ -38,4 +38,8 @@ jobs:
             release/*.dmg
             release/*.zip
             release/*.exe
+            LICENSE
+            THIRD_PARTY_NOTICES.md
+            node_modules/@imgly/background-removal/LICENSE.md
+            node_modules/@imgly/background-removal/ThirdPartyLicenses.json
           if-no-files-found: error

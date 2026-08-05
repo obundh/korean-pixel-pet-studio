@@ -18,6 +18,18 @@ node_modules/@imgly/background-removal/LICENSE.md
 node_modules/@imgly/background-removal/ThirdPartyLicenses.json
 ```
 
+## 배포본에 포함되는 고지 파일
+
+v0.1.0 이후 새로 만드는 Windows 및 macOS 배포본에는 다음 파일을
+`licenses` 폴더에 함께 넣습니다.
+
+- `PixelPet-Studio-MIT-LICENSE.txt`
+- `THIRD_PARTY_NOTICES.md`
+- `IMG.LY-background-removal-AGPL-3.0.md`
+- `IMG.LY-background-removal-ThirdPartyLicenses.json`
+
+기존 v0.1.0 릴리스에는 같은 문서를 별도 다운로드 자산으로 제공합니다.
+
 ## Generated reference assets
 
 `reference-kits/images`의 예시 캐릭터·스타일 이미지는 OpenAI 내장 이미지 생성 도구를 사용해 이 프로젝트를 위해 생성한 오리지널 예시입니다. 28개 포즈 이미지는 저장소의 `scripts/generate-pose-references.mjs`가 결정론적으로 생성합니다. 사용자가 업로드하는 기관 마스코트와 로고의 권리는 이 저장소에 포함되지 않습니다.
